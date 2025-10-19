@@ -48,6 +48,4 @@ jest-test-results.json
 .eslintcache
 .prettiercache
 
-# Readme.md
-README.md
 .yarn
