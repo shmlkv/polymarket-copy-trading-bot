@@ -92,11 +92,17 @@ class Logger {
         console.log(chalk.dim('─'.repeat(70)));
     }
 
+    private static spinnerFrames = ['⏳', '⌛', '⏳'];
+    private static spinnerIndex = 0;
+
     static waiting(traderCount: number) {
         const timestamp = new Date().toLocaleTimeString();
+        const spinner = this.spinnerFrames[this.spinnerIndex % this.spinnerFrames.length];
+        this.spinnerIndex++;
+
         process.stdout.write(
             chalk.dim(`\r[${timestamp}] `) +
-                chalk.cyan('⏳ Waiting for trades from ') +
+                chalk.cyan(`${spinner} Waiting for trades from `) +
                 chalk.yellow(`${traderCount} trader(s)...`) +
                 '  '
         );
