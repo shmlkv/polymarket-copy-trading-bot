@@ -1,81 +1,226 @@
 # Polymarket Copy Trading Bot
 
-## Introduction
-
-This project is a Polymarket Copy Trading Bot that allows users to automatically copy trades from selected traders on Polymarket.
+> **Copy the best, automate success.** Mirror trades from top Polymarket traders with intelligent position sizing and real-time execution.
 
 ![Polymarket Copy Trading Bot](./docs/screenshot.png)
 
-Check user performance [on Predictfolio](https://predictfolio.com/dashboard/0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b).
+**Example trader:** Check performance on [Predictfolio](https://predictfolio.com/dashboard/0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b)
+
+## 🚀 Quick Start
+
+**New to the bot?** Get started in 5 minutes with our [Quick Start Guide](./QUICK_START.md).
+
+Already familiar? Jump to [Installation](#installation) below.
+
+---
+
+## Overview
+
+The Polymarket Copy Trading Bot automatically replicates trades from successful Polymarket traders to your wallet. Instead of manually tracking top performers, the bot monitors their activity 24/7 and executes proportionally sized trades on your behalf.
+
+### How It Works
+
+1. **Select Traders** - Choose top performers from [Polymarket leaderboard](https://polymarket.com/leaderboard) or [Predictfolio](https://predictfolio.com)
+2. **Monitor Trades** - Bot continuously watches for new positions opened by your selected traders
+3. **Calculate Position Size** - Automatically scales trades based on your balance vs. trader's balance
+4. **Execute Orders** - Places matching orders on Polymarket using your wallet
+5. **Track Performance** - Logs all activity and maintains trade history in MongoDB
+
+### Position Sizing Example
+
+If you're tracking a trader with $10,000 and they buy $500 worth of shares:
+- Your balance: $1,000
+- Position ratio: `$1,000 / ($10,000 + $500) = 9.5%`
+- Your trade size: `$500 × 9.5% = $47.50`
+
+The bot ensures you maintain proportional exposure relative to the traders you follow.
+
+---
 
 ## Features
 
-- **Multi-Trader Support**: Track and copy trades from multiple traders simultaneously
-- **Automated Trading**: Automatically copy trades with proportional position sizing
-- **Real-time Monitoring**: Continuously monitor selected traders' activity
-- **Beautiful Logging**: Clean, colorful console output with structured information
-- **Customizable Settings**: Configure trading parameters and risk management
-- **Flexible Configuration**: Support for comma-separated or JSON array of trader addresses
-- **Secure**: No credential exposure in logs
+- **Multi-Trader Support** - Track and copy trades from multiple traders simultaneously
+- **Smart Position Sizing** - Automatically adjusts trade sizes based on your capital
+- **Real-time Execution** - Monitors trades every second and executes instantly
+- **Beautiful Logging** - Clean, colorful console output with structured trade information
+- **MongoDB Integration** - Persistent storage of all trades and positions
+- **Flexible Configuration** - Support comma-separated or JSON array of trader addresses
+- **Secure** - No credential exposure in logs, private keys stay local
+- **Price Protection** - Built-in slippage checks to avoid unfavorable fills
 
 ## Installation
 
-1. Install latest version of Node.js and npm
-2. Navigate to the project directory:
-    ```bash
-    cd polymarket_copy_trading_bot
-    ```
-3. Create `.env` file from example:
-    ```bash
-    cp .env.example .env
-    ```
-4. Configure env variables in `.env`:
+### Prerequisites
 
-    ```bash
-    # Single trader
-    USER_ADDRESSES = '0xTrader1Address...'
+- Node.js v18 or higher
+- MongoDB database (MongoDB Atlas recommended)
+- Polygon wallet with USDC balance
+- Small amount of MATIC for gas fees (~$5-10)
 
-    # OR Multiple traders (comma-separated)
-    USER_ADDRESSES = '0xTrader1..., 0xTrader2..., 0xTrader3...'
+### Setup Steps
 
-    # OR Multiple traders (JSON array)
-    USER_ADDRESSES = '["0xTrader1...", "0xTrader2...", "0xTrader3..."]'
+1. **Clone and Install**
+   ```bash
+   git clone <repository-url>
+   cd polymarket-copy-trading-bot-v1
+   npm install
+   ```
 
-    PROXY_WALLET = 'Your Polygon wallet address'
-    PRIVATE_KEY = 'Your wallet private key (without 0x)'
+2. **Configure Environment**
+   ```bash
+   cp .env.example .env
+   ```
 
-    CLOB_HTTP_URL = 'https://clob.polymarket.com/'
-    CLOB_WS_URL = 'wss://ws-subscriptions-clob.polymarket.com/ws'
+   Edit `.env` with your settings:
+   ```bash
+   # Traders to copy (comma-separated or JSON array)
+   USER_ADDRESSES = '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b, 0x6bab41a0dc40d6dd4c1a915b8c01969479fd1292'
 
-    FETCH_INTERVAL = 1      # Check for new trades every N seconds
-    TOO_OLD_TIMESTAMP = 1   # Ignore trades older than N hours
-    RETRY_LIMIT = 3         # Retry failed orders N times
+   # Your trading wallet
+   PROXY_WALLET = 'your_polygon_wallet_address'
+   PRIVATE_KEY = 'your_private_key_without_0x_prefix'
 
-    MONGO_URI = 'your_mongodb_connection_string'
-    RPC_URL = 'your_polygon_rpc_url'
-    USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'
-    ```
+   # Database and RPC
+   MONGO_URI = 'mongodb+srv://user:pass@cluster.mongodb.net/database'
+   RPC_URL = 'https://polygon-mainnet.infura.io/v3/YOUR_PROJECT_ID'
+   ```
 
-    **Security Warning**: Never commit your `.env` file or share your `PRIVATE_KEY` and `MONGO_URI`!
+3. **Build and Run**
+   ```bash
+   npm run build
+   npm start
+   ```
 
-5. Install the required dependencies:
-    ```bash
-    npm install
-    ```
-6. Build the project:
-    ```bash
-    npm run build
-    ```
-7. Run BOT:
-    ```bash
-    npm run start
-    ```
+**📖 For detailed setup instructions, see the [Quick Start Guide](./QUICK_START.md).**
+
+---
+
+## Configuration
+
+### Finding Traders to Copy
+
+1. Visit [Polymarket Leaderboard](https://polymarket.com/leaderboard)
+2. Look for traders with:
+   - Positive P&L (green)
+   - Win rate above 55%
+   - Active trading history
+   - Position sizes you can afford to copy proportionally
+
+3. Check their detailed stats on [Predictfolio](https://predictfolio.com)
+4. Copy their wallet address and add to `USER_ADDRESSES`
+
+### Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `USER_ADDRESSES` | Traders to copy (comma-separated or JSON) | `'0xABC..., 0xDEF...'` |
+| `PROXY_WALLET` | Your Polygon wallet address | `'0x123...'` |
+| `PRIVATE_KEY` | Your wallet private key (no 0x prefix) | `'abc123...'` |
+| `FETCH_INTERVAL` | Check interval in seconds | `1` |
+| `MONGO_URI` | MongoDB connection string | `'mongodb+srv://...'` |
+| `RPC_URL` | Polygon RPC endpoint | `'https://polygon...'` |
+
+### Trading Logic
+
+**Buy Strategy:**
+- Calculates position ratio: `your_balance / (trader_balance + trade_size)`
+- Scales trade size proportionally to your capital
+- Checks price slippage (max $0.05 difference)
+- Executes market order at best available price
+
+**Sell Strategy:**
+- Mirrors trader's sell percentage
+- If trader sells 20% of position, bot sells 20% of yours
+- If trader closes entire position, bot closes yours completely
+
+**Example:**
+```
+Trader (Balance: $50,000) buys $5,000 (10% of capital)
+You (Balance: $1,000) buy $91 (9.1% of capital)
+
+Position ratio: 1,000 / 55,000 = 0.0182 (1.82%)
+Your trade: $5,000 × 0.0182 = $91
+```
+
+---
+
+## Safety and Risk Management
+
+⚠️ **Important Disclaimers:**
+
+- **Use at your own risk** - This bot executes real trades with real money
+- **Start small** - Test with minimal funds before scaling up
+- **Diversify** - Don't copy just one trader; track 3-5 different strategies
+- **Monitor regularly** - Check bot logs daily to ensure proper execution
+- **Set limits** - The current version has no built-in stop-loss or position limits
+- **No guarantees** - Past performance of copied traders doesn't guarantee future results
+
+### Best Practices
+
+1. **Dedicated Wallet** - Use a separate wallet just for the bot, not your main funds
+2. **Limited Capital** - Only allocate what you can afford to lose
+3. **Research Traders** - Verify trader history and strategy before copying
+4. **Active Monitoring** - Set up alerts and check the bot at least once daily
+5. **Emergency Stop** - Know how to stop the bot quickly (Ctrl+C)
+
+---
+
+## Documentation
+
+- **[Quick Start Guide](./QUICK_START.md)** - Get running in 5 minutes
+- **[Multi-Trader Guide](./MULTI_TRADER_GUIDE.md)** - Advanced multi-trader setup
+- **[Logging Preview](./LOGGING_PREVIEW.md)** - See what the console output looks like
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Bot not detecting trades:**
+- Verify trader addresses are correct
+- Check that traders are actively trading
+- Ensure MongoDB connection is stable
+
+**Trades failing to execute:**
+- Confirm USDC balance in `PROXY_WALLET`
+- Verify you have MATIC for gas fees
+- Check `RPC_URL` is responding (try pinging endpoint)
+
+**Price slippage errors:**
+- Current slippage tolerance is $0.05
+- Markets may be moving too fast
+- Consider increasing `FETCH_INTERVAL` to reduce race conditions
+
+For more help, see the full troubleshooting section in [Quick Start Guide](./QUICK_START.md).
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request. And if you are interested in this project, please consider giving it a star✨.
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-<!--
-## Contact
+If you find this project helpful, please consider giving it a star ✨
 
-For updated version or any questions, please contact me at [Telegram](https://t.me/trust4120). -->
+---
+
+## License
+
+This project is provided as-is for educational and research purposes. Users are responsible for compliance with local laws and Polymarket's terms of service.
+
+---
+
+## Acknowledgments
+
+- Built on [Polymarket CLOB Client](https://github.com/Polymarket/clob-client)
+- Uses [Predictfolio](https://predictfolio.com) for trader analytics
+- Powered by Polygon network
+
+---
+
+**Disclaimer:** This software is for educational purposes only. Trading involves risk of loss. The developers are not responsible for any financial losses incurred while using this bot.
