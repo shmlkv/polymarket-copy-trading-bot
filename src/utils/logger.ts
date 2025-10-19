@@ -5,6 +5,11 @@ class Logger {
         return `${address.slice(0, 6)}...${address.slice(-4)}`;
     }
 
+    private static maskAddress(address: string): string {
+        // Show 0x and first 4 chars, mask middle, show last 4 chars
+        return `${address.slice(0, 6)}${'*'.repeat(34)}${address.slice(-4)}`;
+    }
+
     static header(title: string) {
         console.log('\n' + chalk.cyan('━'.repeat(70)));
         console.log(chalk.cyan.bold(`  ${title}`));
@@ -70,13 +75,23 @@ class Logger {
     }
 
     static startup(traders: string[], myWallet: string) {
-        this.header('🤖 POLYMARKET COPY TRADING BOT');
+        console.log('\n');
+        // ASCII Art Logo with gradient colors
+        console.log(chalk.cyan('  ____       _        ____                 '));
+        console.log(chalk.cyan(' |  _ \\ ___ | |_   _ / ___|___  _ __  _   _ '));
+        console.log(chalk.cyan.bold(' | |_) / _ \\| | | | | |   / _ \\| \'_ \\| | | |'));
+        console.log(chalk.magenta.bold(' |  __/ (_) | | |_| | |__| (_) | |_) | |_| |'));
+        console.log(chalk.magenta(' |_|   \\___/|_|\\__, |\\____\\___/| .__/ \\__, |'));
+        console.log(chalk.magenta('               |___/            |_|    |___/ '));
+        console.log(chalk.gray('               Copy the best, automate success\n'));
+
+        console.log(chalk.cyan('━'.repeat(70)));
         console.log(chalk.cyan('📊 Tracking Traders:'));
         traders.forEach((address, index) => {
             console.log(chalk.gray(`   ${index + 1}. ${address}`));
         });
         console.log(chalk.cyan(`\n💼 Your Wallet:`));
-        console.log(chalk.gray(`   ${myWallet}\n`));
+        console.log(chalk.gray(`   ${this.maskAddress(myWallet)}\n`));
     }
 
     static dbConnection(traders: string[], counts: number[]) {

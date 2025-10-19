@@ -45,7 +45,7 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 - **Beautiful Logging** - Clean, colorful console output with structured trade information
 - **MongoDB Integration** - Persistent storage of all trades and positions
 - **Flexible Configuration** - Support comma-separated or JSON array of trader addresses
-- **Secure** - No credential exposure in logs, private keys stay local
+- **Secure** - No credential exposure in logs, wallet addresses masked with `****`, private keys stay local
 - **Price Protection** - Built-in slippage checks to avoid unfavorable fills
 
 ## Installation
