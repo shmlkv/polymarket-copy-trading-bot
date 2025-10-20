@@ -105,7 +105,7 @@ class Logger {
     }
 
     static dbConnection(traders: string[], counts: number[]) {
-        console.log(chalk.cyan('📦 Database Status:'));
+        console.log('\n' + chalk.cyan('📦 Database Status:'));
         traders.forEach((address, index) => {
             const countStr = chalk.yellow(`${counts[index]} trades`);
             console.log(chalk.gray(`   ${this.formatAddress(address)}: ${countStr}`));
@@ -137,12 +137,65 @@ class Logger {
         process.stdout.write('\r' + ' '.repeat(100) + '\r');
     }
 
-    static positions(traders: string[], positionCounts: number[], positionDetails?: any[][]) {
-        console.log(chalk.cyan('📈 Current Open Positions:'));
+    static myPositions(wallet: string, count: number, topPositions: any[], overallPnl: number, totalValue: number, initialValue: number, currentBalance: number) {
+        console.log('\n' + chalk.magenta.bold('💼 YOUR POSITIONS'));
+        console.log(chalk.gray(`   Wallet: ${this.formatAddress(wallet)}`));
+        console.log('');
+
+        // Show balance and portfolio overview
+        const balanceStr = chalk.yellow.bold(`$${currentBalance.toFixed(2)}`);
+        const totalPortfolio = currentBalance + totalValue;
+        const portfolioStr = chalk.cyan.bold(`$${totalPortfolio.toFixed(2)}`);
+
+        console.log(chalk.gray(`   💰 Available Cash:    ${balanceStr}`));
+        console.log(chalk.gray(`   📊 Total Portfolio:   ${portfolioStr}`));
+
+        if (count === 0) {
+            console.log(chalk.gray(`\n   No open positions`));
+        } else {
+            const countStr = chalk.green(`${count} position${count > 1 ? 's' : ''}`);
+            const pnlColor = overallPnl >= 0 ? chalk.green : chalk.red;
+            const pnlSign = overallPnl >= 0 ? '+' : '';
+            const profitStr = pnlColor.bold(`${pnlSign}${overallPnl.toFixed(1)}%`);
+            const valueStr = chalk.cyan(`$${totalValue.toFixed(2)}`);
+            const initialStr = chalk.gray(`$${initialValue.toFixed(2)}`);
+
+            console.log('');
+            console.log(chalk.gray(`   📈 Open Positions:    ${countStr}`));
+            console.log(chalk.gray(`      Invested:          ${initialStr}`));
+            console.log(chalk.gray(`      Current Value:     ${valueStr}`));
+            console.log(chalk.gray(`      Profit/Loss:       ${profitStr}`));
+
+            // Show top positions
+            if (topPositions.length > 0) {
+                console.log(chalk.gray(`\n   🔝 Top Positions:`));
+                topPositions.forEach((pos: any) => {
+                    const pnlColor = pos.percentPnl >= 0 ? chalk.green : chalk.red;
+                    const pnlSign = pos.percentPnl >= 0 ? '+' : '';
+                    console.log(chalk.gray(`      • ${pos.outcome} - ${pos.title.slice(0, 45)}${pos.title.length > 45 ? '...' : ''}`));
+                    console.log(chalk.gray(`        ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`));
+                });
+            }
+        }
+        console.log('');
+    }
+
+    static tradersPositions(traders: string[], positionCounts: number[], positionDetails?: any[][], profitabilities?: number[]) {
+        console.log('\n' + chalk.cyan('📈 TRADERS YOU\'RE COPYING'));
         traders.forEach((address, index) => {
             const count = positionCounts[index];
             const countStr = count > 0 ? chalk.green(`${count} position${count > 1 ? 's' : ''}`) : chalk.gray('0 positions');
-            console.log(chalk.gray(`   ${this.formatAddress(address)}: ${countStr}`));
+
+            // Add profitability if available
+            let profitStr = '';
+            if (profitabilities && profitabilities[index] !== undefined && count > 0) {
+                const pnl = profitabilities[index];
+                const pnlColor = pnl >= 0 ? chalk.green : chalk.red;
+                const pnlSign = pnl >= 0 ? '+' : '';
+                profitStr = ` | ${pnlColor.bold(`${pnlSign}${pnl.toFixed(1)}%`)}`;
+            }
+
+            console.log(chalk.gray(`   ${this.formatAddress(address)}: ${countStr}${profitStr}`));
 
             // Show position details if available
             if (positionDetails && positionDetails[index] && positionDetails[index].length > 0) {

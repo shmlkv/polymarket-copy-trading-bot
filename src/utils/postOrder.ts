@@ -147,19 +147,44 @@ const postOrder = async (
     } else if (condition === 'buy') {       //Buy strategy
         Logger.info('Executing BUY strategy...');
         const ratio = my_balance / (user_balance + trade.usdcSize);
-        Logger.info(`Position ratio: ${(ratio * 100).toFixed(1)}%`);
-        let remaining = trade.usdcSize * ratio * TRADE_MULTIPLIER;
+        Logger.info(`Position ratio: ${(ratio * 100).toFixed(3)}% (your $${my_balance.toFixed(2)} / trader's $${(user_balance + trade.usdcSize).toFixed(2)})`);
 
-        if (TRADE_MULTIPLIER !== 1.0) {
-            Logger.info(`Applying ${TRADE_MULTIPLIER}x multiplier: $${(trade.usdcSize * ratio).toFixed(2)} → $${remaining.toFixed(2)}`);
-        }
+        // Calculate base order size without multiplier
+        let remaining = trade.usdcSize * ratio;
 
         // Check minimum order size (Polymarket requires min $1)
         const MIN_ORDER_SIZE = 1.0;
+
+        // Apply multiplier only if order is below minimum
         if (remaining < MIN_ORDER_SIZE) {
-            Logger.warning(`Order size ($${remaining.toFixed(2)}) below minimum ($${MIN_ORDER_SIZE}) - skipping trade`);
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true });
-            return;
+            const originalAmount = remaining;
+            remaining = remaining * TRADE_MULTIPLIER;
+
+            if (TRADE_MULTIPLIER !== 1.0) {
+                Logger.info(`Order below $1 minimum, applying ${TRADE_MULTIPLIER}x multiplier: $${originalAmount.toFixed(4)} → $${remaining.toFixed(4)}`);
+            }
+
+            // Check again after applying multiplier
+            if (remaining < MIN_ORDER_SIZE) {
+                Logger.warning(`Order size ($${remaining.toFixed(4)}) still below minimum ($${MIN_ORDER_SIZE}) after multiplier - skipping trade`);
+                Logger.warning(`Trader's $${trade.usdcSize.toFixed(2)} trade is too small relative to balance difference`);
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+                return;
+            }
+        } else {
+            Logger.info(`Order size: $${remaining.toFixed(2)} (multiplier not applied, already above $1)`);
+        }
+
+        // Check if we have enough available balance (leave 1% buffer for fees/rounding)
+        const SAFETY_BUFFER = 0.99;
+        if (remaining > my_balance * SAFETY_BUFFER) {
+            Logger.warning(`Order size ($${remaining.toFixed(2)}) exceeds available balance ($${my_balance.toFixed(2)}) - reducing to fit`);
+            remaining = my_balance * SAFETY_BUFFER;
+            if (remaining < MIN_ORDER_SIZE) {
+                Logger.warning(`Adjusted order size too small - skipping trade`);
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+                return;
+            }
         }
 
         let retry = 0;
@@ -192,21 +217,24 @@ const postOrder = async (
             }
 
             let order_arges;
-            if (remaining <= parseFloat(minPriceAsk.size) * parseFloat(minPriceAsk.price)) {
-                order_arges = {
-                    side: Side.BUY,
-                    tokenID: trade.asset,
-                    amount: remaining,
-                    price: parseFloat(minPriceAsk.price),
-                };
-            } else {
-                order_arges = {
-                    side: Side.BUY,
-                    tokenID: trade.asset,
-                    amount: parseFloat(minPriceAsk.size) * parseFloat(minPriceAsk.price),
-                    price: parseFloat(minPriceAsk.price),
-                };
+            const maxOrderSize = parseFloat(minPriceAsk.size) * parseFloat(minPriceAsk.price);
+            const orderSize = Math.min(remaining, maxOrderSize);
+
+            // Additional safety check: ensure order size doesn't exceed balance
+            if (orderSize > my_balance * 0.95) {
+                Logger.warning(`Order size ($${orderSize.toFixed(2)}) too close to balance ($${my_balance.toFixed(2)}) - skipping`);
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
+                break;
             }
+
+            order_arges = {
+                side: Side.BUY,
+                tokenID: trade.asset,
+                amount: orderSize,
+                price: parseFloat(minPriceAsk.price),
+            };
+
+            Logger.info(`Creating order: $${orderSize.toFixed(2)} @ $${minPriceAsk.price} (Balance: $${my_balance.toFixed(2)})`);
             // Order args logged internally
             const signedOrder = await clobClient.createMarketOrder(order_arges);
             const resp = await clobClient.postOrder(signedOrder, OrderType.FOK);
@@ -245,21 +273,37 @@ const postOrder = async (
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
             return;
         } else if (!user_position) {
-            remaining = my_position.size * TRADE_MULTIPLIER;
+            // Calculate base sell amount without multiplier
+            remaining = my_position.size;
         } else {
             const ratio = trade.size / (user_position.size + trade.size);
             Logger.info(`Position ratio: ${(ratio * 100).toFixed(1)}%`);
-            remaining = my_position.size * ratio * TRADE_MULTIPLIER;
-        }
-
-        if (TRADE_MULTIPLIER !== 1.0 && remaining > 0) {
-            Logger.info(`Applying ${TRADE_MULTIPLIER}x multiplier to sell amount`);
+            // Calculate base sell amount without multiplier
+            remaining = my_position.size * ratio;
         }
 
         // Check minimum order size
         const MIN_ORDER_SIZE = 1.0;
-        if (remaining < MIN_ORDER_SIZE) {
-            Logger.warning(`Position size to sell (${remaining.toFixed(2)} tokens) below minimum - skipping trade`);
+
+        // Apply multiplier only if sell amount is below minimum
+        if (remaining < MIN_ORDER_SIZE && remaining > 0) {
+            const originalAmount = remaining;
+            remaining = remaining * TRADE_MULTIPLIER;
+
+            if (TRADE_MULTIPLIER !== 1.0) {
+                Logger.info(`Sell amount below minimum, applying ${TRADE_MULTIPLIER}x multiplier: ${originalAmount.toFixed(2)} → ${remaining.toFixed(2)} tokens`);
+            }
+
+            // Check again after applying multiplier
+            if (remaining < MIN_ORDER_SIZE) {
+                Logger.warning(`Position size to sell (${remaining.toFixed(2)} tokens) still below minimum after multiplier - skipping trade`);
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+                return;
+            }
+        } else if (remaining >= MIN_ORDER_SIZE) {
+            Logger.info(`Sell amount: ${remaining.toFixed(2)} tokens (multiplier not applied, already above minimum)`);
+        } else {
+            Logger.warning(`No position to sell`);
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
             return;
         }
