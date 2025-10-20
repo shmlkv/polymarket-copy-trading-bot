@@ -1,6 +1,39 @@
 import chalk from 'chalk';
+import * as fs from 'fs';
+import * as path from 'path';
 
 class Logger {
+    private static logsDir = path.join(process.cwd(), 'logs');
+    private static currentLogFile = '';
+
+    private static getLogFileName(): string {
+        const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        return path.join(this.logsDir, `bot-${date}.log`);
+    }
+
+    private static ensureLogsDir(): void {
+        if (!fs.existsSync(this.logsDir)) {
+            fs.mkdirSync(this.logsDir, { recursive: true });
+        }
+    }
+
+    private static writeToFile(message: string): void {
+        try {
+            this.ensureLogsDir();
+            const logFile = this.getLogFileName();
+            const timestamp = new Date().toISOString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            fs.appendFileSync(logFile, logEntry, 'utf8');
+        } catch (error) {
+            // Silently fail to avoid infinite loops
+        }
+    }
+
+    private static stripAnsi(str: string): string {
+        // Remove ANSI color codes for file logging
+        return str.replace(/\u001b\[\d+m/g, '');
+    }
+
     private static formatAddress(address: string): string {
         return `${address.slice(0, 6)}...${address.slice(-4)}`;
     }
@@ -14,22 +47,27 @@ class Logger {
         console.log('\n' + chalk.cyan('━'.repeat(70)));
         console.log(chalk.cyan.bold(`  ${title}`));
         console.log(chalk.cyan('━'.repeat(70)) + '\n');
+        this.writeToFile(`HEADER: ${title}`);
     }
 
     static info(message: string) {
         console.log(chalk.blue('ℹ'), message);
+        this.writeToFile(`INFO: ${message}`);
     }
 
     static success(message: string) {
         console.log(chalk.green('✓'), message);
+        this.writeToFile(`SUCCESS: ${message}`);
     }
 
     static warning(message: string) {
         console.log(chalk.yellow('⚠'), message);
+        this.writeToFile(`WARNING: ${message}`);
     }
 
     static error(message: string) {
         console.log(chalk.red('✗'), message);
+        this.writeToFile(`ERROR: ${message}`);
     }
 
     static trade(traderAddress: string, action: string, details: any) {
@@ -61,6 +99,15 @@ class Logger {
             console.log(chalk.gray(`TX:     ${chalk.blue.underline(txUrl)}`));
         }
         console.log(chalk.magenta('─'.repeat(70)) + '\n');
+
+        // Log to file
+        let tradeLog = `TRADE: ${this.formatAddress(traderAddress)} - ${action}`;
+        if (details.side) tradeLog += ` | Side: ${details.side}`;
+        if (details.amount) tradeLog += ` | Amount: $${details.amount}`;
+        if (details.price) tradeLog += ` | Price: ${details.price}`;
+        if (details.title) tradeLog += ` | Market: ${details.title}`;
+        if (details.transactionHash) tradeLog += ` | TX: ${details.transactionHash}`;
+        this.writeToFile(tradeLog);
     }
 
     static balance(myBalance: number, traderBalance: number, traderAddress: string) {
@@ -74,8 +121,10 @@ class Logger {
     static orderResult(success: boolean, message: string) {
         if (success) {
             console.log(chalk.green('✓'), chalk.green.bold('Order executed:'), message);
+            this.writeToFile(`ORDER SUCCESS: ${message}`);
         } else {
             console.log(chalk.red('✗'), chalk.red.bold('Order failed:'), message);
+            this.writeToFile(`ORDER FAILED: ${message}`);
         }
     }
 
@@ -172,8 +221,11 @@ class Logger {
                 topPositions.forEach((pos: any) => {
                     const pnlColor = pos.percentPnl >= 0 ? chalk.green : chalk.red;
                     const pnlSign = pos.percentPnl >= 0 ? '+' : '';
+                    const avgPrice = pos.avgPrice || 0;
+                    const curPrice = pos.curPrice || 0;
                     console.log(chalk.gray(`      • ${pos.outcome} - ${pos.title.slice(0, 45)}${pos.title.length > 45 ? '...' : ''}`));
-                    console.log(chalk.gray(`        ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`));
+                    console.log(chalk.gray(`        Value: ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | PnL: ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`));
+                    console.log(chalk.gray(`        Bought @ ${chalk.yellow(`${(avgPrice * 100).toFixed(1)}¢`)} | Current @ ${chalk.yellow(`${(curPrice * 100).toFixed(1)}¢`)}`));
                 });
             }
         }
@@ -202,8 +254,11 @@ class Logger {
                 positionDetails[index].forEach((pos: any) => {
                     const pnlColor = pos.percentPnl >= 0 ? chalk.green : chalk.red;
                     const pnlSign = pos.percentPnl >= 0 ? '+' : '';
+                    const avgPrice = pos.avgPrice || 0;
+                    const curPrice = pos.curPrice || 0;
                     console.log(chalk.gray(`      • ${pos.outcome} - ${pos.title.slice(0, 40)}${pos.title.length > 40 ? '...' : ''}`));
                     console.log(chalk.gray(`        Value: ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | PnL: ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`));
+                    console.log(chalk.gray(`        Bought @ ${chalk.yellow(`${(avgPrice * 100).toFixed(1)}¢`)} | Current @ ${chalk.yellow(`${(curPrice * 100).toFixed(1)}¢`)}`));
                 });
             }
         });

@@ -8,7 +8,7 @@
 
 ## 🚀 Quick Start
 
-**New to the bot?** Get started in 5 minutes with our [Quick Start Guide](./QUICK_START.md).
+**New to the bot?** Get started in 5 minutes with our [Quick Start Guide](./docs/QUICK_START.md).
 
 Already familiar? Jump to [Installation](#installation) below.
 
@@ -92,7 +92,7 @@ The bot ensures you maintain proportional exposure relative to the traders you f
    npm start
    ```
 
-**📖 For detailed setup instructions, see the [Quick Start Guide](./QUICK_START.md).**
+**📖 For detailed setup instructions, see the [Quick Start Guide](./docs/QUICK_START.md).**
 
 ---
 
@@ -183,9 +183,10 @@ With 2x multiplier: $91 × 2.0 = $182 (actual trade size)
 
 ## Documentation
 
-- **[Quick Start Guide](./QUICK_START.md)** - Get running in 5 minutes
-- **[Multi-Trader Guide](./MULTI_TRADER_GUIDE.md)** - Advanced multi-trader setup
-- **[Logging Preview](./LOGGING_PREVIEW.md)** - See what the console output looks like
+- **[Quick Start Guide](./docs/QUICK_START.md)** - Get running in 5 minutes
+- **[Multi-Trader Guide](./docs/MULTI_TRADER_GUIDE.md)** - Advanced multi-trader setup
+- **[Funding Guide](./docs/FUNDING_GUIDE.md)** - How to fund your wallet with USDC and POL
+- **[Logging Preview](./docs/LOGGING_PREVIEW.md)** - See what the console output looks like
 
 ---
 
@@ -208,7 +209,7 @@ With 2x multiplier: $91 × 2.0 = $182 (actual trade size)
 - Markets may be moving too fast
 - Consider increasing `FETCH_INTERVAL` to reduce race conditions
 
-For more help, see the full troubleshooting section in [Quick Start Guide](./QUICK_START.md).
+For more help, see the full troubleshooting section in [Quick Start Guide](./docs/QUICK_START.md).
 
 ---
 

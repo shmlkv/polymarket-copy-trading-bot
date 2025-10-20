@@ -1,65 +1,86 @@
 # 🚀 Quick Start Guide
 
-## Prerequisites
+Get your Polymarket copy trading bot running in **5 minutes**. This guide walks you through the essential setup steps to start copying trades from top performers.
 
-- Node.js v18+ installed
-- MongoDB database (Atlas or local)
-- Polygon wallet with USDC
-- Some MATIC for gas fees
+## What You'll Need
 
-## Setup (5 minutes)
+Before starting, ensure you have:
 
-### 1. Configure Environment
+- ✅ **Node.js v18+** - [Download here](https://nodejs.org/)
+- ✅ **MongoDB Database** - [Free tier on MongoDB Atlas](https://www.mongodb.com/cloud/atlas/register)
+- ✅ **Polygon Wallet** - MetaMask or any Web3 wallet
+- ✅ **USDC on Polygon** - For executing trades
+- ✅ **MATIC** - Small amount for gas fees (~$5-10 worth)
 
-Edit `.env` file:
+**Don't have USDC?** Bridge from Ethereum using [Polygon Bridge](https://wallet.polygon.technology/polygon/bridge/deposit) or buy directly on an exchange that supports Polygon withdrawals.
 
-```bash
-# Single trader
-USER_ADDRESSES = '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b'
+---
 
-# OR multiple traders
-USER_ADDRESSES = '0xTrader1..., 0xTrader2..., 0xTrader3...'
+## 5-Minute Setup
 
-# Your wallet
-PROXY_WALLET = '0xYourWalletAddress'
-PRIVATE_KEY = 'your_private_key_without_0x'
-
-# MongoDB
-MONGO_URI = 'mongodb+srv://username:password@cluster.mongodb.net/database'
-
-# Polygon RPC (get from Infura/Alchemy)
-RPC_URL = 'https://polygon-mainnet.infura.io/v3/YOUR_KEY'
-```
-
-### 2. Install Dependencies
+### Step 1: Install Dependencies
 
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd polymarket-copy-trading-bot-v1
+
+# Install packages
 npm install
 ```
 
-### 3. Build
+### Step 2: Configure Environment
 
 ```bash
-npm run build
+# Copy the example config
+cp .env.example .env
 ```
 
-### 4. Run
+Edit `.env` with your settings:
 
 ```bash
+# Traders to copy (find addresses on Polymarket leaderboard)
+USER_ADDRESSES = '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b'
+
+# Your trading wallet (the wallet that will execute trades)
+PROXY_WALLET = 'your_polygon_wallet_address'
+PRIVATE_KEY = 'your_private_key_without_0x_prefix'
+
+# MongoDB (get free database at mongodb.com/cloud/atlas)
+MONGO_URI = 'mongodb+srv://username:password@cluster.mongodb.net/database'
+
+# Polygon RPC (get free key at infura.io or alchemy.com)
+RPC_URL = 'https://polygon-mainnet.infura.io/v3/YOUR_PROJECT_ID'
+
+# Don't change these
+CLOB_HTTP_URL = 'https://clob.polymarket.com/'
+CLOB_WS_URL = 'wss://ws-subscriptions-clob.polymarket.com/ws'
+USDC_CONTRACT_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'
+```
+
+### Step 3: Build and Run
+
+```bash
+# Compile TypeScript
+npm run build
+
+# Start the bot
 npm start
 ```
 
+---
+
 ## Expected Output
+
+When the bot starts successfully, you should see:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🤖 POLYMARKET COPY TRADING BOT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📊 Tracking 3 trader(s):
+📊 Tracking 1 trader(s):
    1. 0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b
-   2. 0x6bab41a0dc40d6dd4c1a915b8c01969479fd1292
-   3. 0xd218e474776403a330142299f7796e8ba32eb5c9
 
 💼 Your Wallet:
    0x4fbBe5599c06e846D2742014c9eB04A8a3d1DE8C
@@ -68,137 +89,260 @@ npm start
 ℹ Initializing CLOB client...
 ✓ CLOB client ready
 ──────────────────────────────────────────────────────────────────────
-📦 Database Status:
-   0x7c3d...6b: 15 trades
-   0x6bab...92: 8 trades
-   0xd218...c9: 0 trades
-
-✓ Monitoring 3 trader(s) every 1s
-──────────────────────────────────────────────────────────────────────
-[14:23:45] ⏳ Waiting for trades from 3 trader(s)...
+[2:35:54 PM] ⏳ Waiting for trades from 1 trader(s)...
 ```
+
+The sandglass icon (⏳⌛) will animate while waiting for trades.
+
+---
 
 ## Finding Traders to Copy
 
-1. Visit https://polymarket.com/leaderboard
-2. Look for traders with:
-   - Consistent profits (green P&L)
-   - High win rate (>55%)
-   - Active recent trading
-   - Position sizes you can afford to copy
+### Method 1: Polymarket Leaderboard
 
-3. Copy their wallet address
-4. Add to `USER_ADDRESSES` in `.env`
+1. Visit [Polymarket Leaderboard](https://polymarket.com/leaderboard)
+2. Sort by "Profit" or "Volume"
+3. Click on a trader to view their profile
+4. Copy their wallet address from the URL
+5. Add to `USER_ADDRESSES` in `.env`
 
-## Safety Tips
+### Method 2: Predictfolio
 
-✅ **DO:**
-- Start with small amounts
-- Use a dedicated wallet
-- Monitor bot regularly
-- Track 3-5 different traders for diversification
+1. Visit [Predictfolio](https://predictfolio.com)
+2. Browse top performers
+3. Check detailed stats (win rate, P&L, trade history)
+4. Copy wallet address
+5. Add to `USER_ADDRESSES`
 
-❌ **DON'T:**
-- Use your main wallet
-- Store all funds in the bot wallet
-- Copy traders blindly
-- Leave bot running unattended for long periods
+### What to Look For
 
-## Troubleshooting
+✅ **Good Trader Characteristics:**
+- Positive total P&L (green numbers)
+- Win rate above 55%
+- Consistent trading activity (not just one lucky bet)
+- Position sizes you can afford to copy proportionally
+- Recent activity (traded in last 7 days)
 
-### Bot doesn't start
-```bash
-# Check Node.js version
-node --version  # Should be 18+
+❌ **Red Flags:**
+- One massive winning bet with no other activity
+- Win rate below 50%
+- Position sizes too large for your capital
+- Inactive for weeks/months
 
-# Rebuild
-rm -rf dist node_modules
-npm install
-npm run build
+---
+
+## How Trading Works
+
+When a trader you're following makes a trade, the bot:
+
+### 1. Detects the Trade
+Checks every second for new positions
+
+### 2. Calculates Your Position Size
+```
+ratio = your_balance / (trader_balance + trade_size)
+your_trade_size = trader_trade_size × ratio
 ```
 
-### MongoDB connection fails
-- Verify `MONGO_URI` is correct
-- Check MongoDB Atlas IP whitelist (allow all: 0.0.0.0/0)
-- Test connection at https://mongodbcompass.com
+**Example:**
+- Trader has $10,000, buys $1,000 worth (10% of capital)
+- You have $1,000
+- Ratio: `1,000 / (10,000 + 1,000) = 0.091` (9.1%)
+- You buy: `$1,000 × 0.091 = $91` (9.1% of your capital)
 
-### No trades detected
-- Verify trader addresses are correct
-- Check traders are actively trading
-- Increase `FETCH_INTERVAL` to 2-3 seconds
+### 3. Checks Price Slippage
+- Compares current market price to trader's execution price
+- Skips trade if difference is > $0.05 (to avoid bad fills)
 
-### Trades failing
-- Ensure `PROXY_WALLET` has USDC balance
-- Ensure you have MATIC for gas (~$5-10 worth)
-- Check `RPC_URL` is working
+### 4. Executes Order
+- Places market order at best available price
+- Uses Fill-or-Kill (FOK) order type
+- Retries up to 3 times if initial order fails
 
-## What Happens When a Trade is Detected?
-
+### 5. Logs Result
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  ⚡ 1 NEW TRADE TO COPY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 ──────────────────────────────────────────────────────────────────────
 📊 NEW TRADE DETECTED
 Trader: 0x7c3d...6b
 Side:   BUY
-Amount: $150
+Amount: $1,000
 Price:  0.68
 ──────────────────────────────────────────────────────────────────────
 
 Balances:
   Your balance:   $1000.00
-  Trader balance: $15000.00 (0x7c3d...6b)
+  Trader balance: $10000.00
 
 ℹ Executing BUY strategy...
 ℹ Position ratio: 9.1%
 ℹ Best ask: 100 @ $0.685
-✓ Order executed: Sold 21.8 tokens at $0.685
+✓ Order executed: Bought 133 tokens at $0.685
+──────────────────────────────────────────────────────────────────────
 ```
 
-The bot:
-1. Detects the trade
-2. Calculates your proportional position size
-3. Finds best price in order book
-4. Executes the order
-5. Updates database
+---
 
-## Position Size Calculation
+## Safety Tips
 
-```
-ratio = your_balance / (trader_balance + trade_size)
-your_trade = trader_trade_size × ratio
-```
+⚠️ **IMPORTANT:** This bot trades with real money. Follow these guidelines:
 
-**Example:**
-- Your balance: $1,000
-- Trader balance: $10,000
-- Trader buys: $500
+### 1. Start Small
+- Begin with $100-500 to test the bot
+- Verify it's copying trades correctly
+- Scale up gradually once confident
 
-```
-ratio = 1,000 / (10,000 + 500) = 0.095 (9.5%)
-You buy: $500 × 0.095 = $47.50
-```
+### 2. Use a Dedicated Wallet
+- Don't use your main wallet
+- Create a fresh wallet just for the bot
+- Only keep trading capital there
 
-## Stopping the Bot
+### 3. Monitor Daily
+- Check logs at least once per day
+- Verify trades are executing as expected
+- Watch for any errors or failed orders
 
-Press `Ctrl + C` to stop gracefully.
+### 4. Diversify
+- Don't copy just one trader
+- Track 3-5 different strategies
+- Example: `USER_ADDRESSES = 'trader1, trader2, trader3'`
 
-## Need Help?
+### 5. Know Your Limits
+- Bot has no built-in stop-loss
+- Can potentially lose all funds if traders lose
+- Only invest what you can afford to lose
 
-- Read full documentation: `MULTI_TRADER_GUIDE.md`
-- See logging examples: `LOGGING_PREVIEW.md`
-- Contact: https://t.me/trust4120
-- Issues: GitHub Issues
+---
+
+## Troubleshooting
+
+### Bot Won't Start
+
+**Error: "USER_ADDRESSES is not defined"**
+- Check your `.env` file exists
+- Verify `USER_ADDRESSES` is spelled correctly
+- Ensure no extra spaces around the `=` sign
+
+**Error: "MongoDB connection failed"**
+- Verify `MONGO_URI` is correct
+- Check MongoDB Atlas IP whitelist (allow `0.0.0.0/0` for testing)
+- Ensure database user has read/write permissions
+
+### No Trades Detected
+
+1. **Verify trader is active**
+   - Check their Polymarket profile
+   - Confirm they've traded recently
+
+2. **Check logs for errors**
+   - Look for API connection issues
+   - Verify MongoDB is storing data
+
+3. **Increase verbosity**
+   - Bot only shows trades when they happen
+   - Silence is normal when traders aren't trading
+
+### Trades Failing
+
+**"Insufficient balance"**
+- Ensure `PROXY_WALLET` has USDC
+- Verify you have MATIC for gas
+
+**"Price slippage too high"**
+- Market moved too fast
+- Consider increasing tolerance in code
+- Or increase `FETCH_INTERVAL` to 2-3 seconds
+
+**"No bids/asks available"**
+- Market may have low liquidity
+- Try trading more popular markets
+- Check Polymarket directly to verify
+
+### Performance Issues
+
+**Bot using too much CPU**
+- Increase `FETCH_INTERVAL` from 1 to 2-3 seconds
+- Reduce number of traders tracked
+
+**Trades executing too slowly**
+- Decrease `FETCH_INTERVAL` to 0.5 seconds (risky)
+- Use faster RPC endpoint (Alchemy vs Infura)
+- Ensure stable internet connection
+
+---
 
 ## Next Steps
 
-Once running successfully:
-1. Monitor for 24 hours with small amounts
-2. Review trade execution accuracy
-3. Adjust `FETCH_INTERVAL` if needed
-4. Scale up gradually
-5. Consider adding protective limits (see feature roadmap)
+Once your bot is running successfully:
 
-Good luck! 🚀
+1. **First 24 Hours**
+   - Monitor continuously
+   - Verify each trade execution
+   - Check position sizing is correct
+
+2. **Week 1**
+   - Review profitability
+   - Compare your P&L to trader's P&L
+   - Adjust if trades are too large/small
+
+3. **Ongoing**
+   - Check logs daily
+   - Research new traders to copy
+   - Consider adding protective features
+
+---
+
+## Advanced Configuration
+
+### Track Multiple Traders
+
+```bash
+# Comma-separated
+USER_ADDRESSES = 'trader1, trader2, trader3'
+
+# Or JSON array
+USER_ADDRESSES = '["trader1", "trader2", "trader3"]'
+```
+
+### Adjust Check Frequency
+
+```bash
+# Check every 2 seconds (less CPU usage)
+FETCH_INTERVAL = 2
+
+# Check every 0.5 seconds (faster execution)
+FETCH_INTERVAL = 0.5
+```
+
+### Custom Retry Logic
+
+```bash
+# Retry failed orders up to 5 times
+RETRY_LIMIT = 5
+```
+
+---
+
+## Additional Resources
+
+- **[Main README](./README.md)** - Complete documentation
+- **[Multi-Trader Guide](./MULTI_TRADER_GUIDE.md)** - Advanced multi-trader setup
+- **[Logging Preview](./LOGGING_PREVIEW.md)** - Console output examples
+
+---
+
+## Getting Help
+
+If you encounter issues:
+
+1. Check this guide's troubleshooting section
+2. Review the [main README](./README.md)
+3. Open a GitHub issue with:
+   - Error message (remove private keys!)
+   - Steps to reproduce
+   - Your environment (Node version, OS)
+
+---
+
+**Ready to trade smarter?** Start the bot and let it mirror the best! 🚀
+
+**Disclaimer:** Trading involves risk. Past performance doesn't guarantee future results. Only invest what you can afford to lose.

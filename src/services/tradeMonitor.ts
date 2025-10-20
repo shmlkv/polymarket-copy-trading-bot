@@ -51,9 +51,9 @@ const init = async () => {
             });
             const myOverallPnl = totalValue > 0 ? weightedPnl / totalValue : 0;
 
-            // Get top 5 positions by current value
+            // Get top 5 positions by profitability (PnL)
             const myTopPositions = myPositions
-                .sort((a: any, b: any) => (b.currentValue || 0) - (a.currentValue || 0))
+                .sort((a: any, b: any) => (b.percentPnl || 0) - (a.percentPnl || 0))
                 .slice(0, 5);
 
             Logger.clearLine();
@@ -86,9 +86,9 @@ const init = async () => {
         const overallPnl = totalValue > 0 ? weightedPnl / totalValue : 0;
         profitabilities.push(overallPnl);
 
-        // Get top 3 positions by current value
+        // Get top 3 positions by profitability (PnL)
         const topPositions = positions
-            .sort((a, b) => (b.currentValue || 0) - (a.currentValue || 0))
+            .sort((a, b) => (b.percentPnl || 0) - (a.percentPnl || 0))
             .slice(0, 3)
             .map(p => p.toObject());
         positionDetails.push(topPositions);
