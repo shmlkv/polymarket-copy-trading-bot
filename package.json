@@ -6,6 +6,8 @@
         "build": "tsc",
         "start": "node dist/index.js",
         "dev": "ts-node src/index.ts",
+        "check-allowance": "ts-node src/scripts/checkAllowance.ts",
+        "verify-allowance": "ts-node src/scripts/verifyAllowance.ts",
         "lint": "eslint .",
         "lint:fix": "eslint --fix .",
         "format": "prettier --write .",

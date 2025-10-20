@@ -50,6 +50,16 @@ class Logger {
         if (details.price) {
             console.log(chalk.gray(`Price:  ${chalk.cyan(details.price)}`));
         }
+        if (details.eventSlug || details.slug) {
+            // Use eventSlug for the correct market URL format
+            const slug = details.eventSlug || details.slug;
+            const marketUrl = `https://polymarket.com/event/${slug}`;
+            console.log(chalk.gray(`Market: ${chalk.blue.underline(marketUrl)}`));
+        }
+        if (details.transactionHash) {
+            const txUrl = `https://polygonscan.com/tx/${details.transactionHash}`;
+            console.log(chalk.gray(`TX:     ${chalk.blue.underline(txUrl)}`));
+        }
         console.log(chalk.magenta('─'.repeat(70)) + '\n');
     }
 

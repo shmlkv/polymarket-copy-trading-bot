@@ -31,9 +31,10 @@ The Polymarket Copy Trading Bot automatically replicates trades from successful 
 If you're tracking a trader with $10,000 and they buy $500 worth of shares:
 - Your balance: $1,000
 - Position ratio: `$1,000 / ($10,000 + $500) = 9.5%`
-- Your trade size: `$500 × 9.5% = $47.50`
+- Base trade size: `$500 × 9.5% = $47.50`
+- With 2x multiplier: `$47.50 × 2 = $95.00`
 
-The bot ensures you maintain proportional exposure relative to the traders you follow.
+The bot ensures you maintain proportional exposure relative to the traders you follow, and you can amplify positions using the multiplier.
 
 ---
 
@@ -55,7 +56,7 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 - Node.js v18 or higher
 - MongoDB database (MongoDB Atlas recommended)
 - Polygon wallet with USDC balance
-- Small amount of MATIC for gas fees (~$5-10)
+- Small amount of POL (formerly MATIC) for gas fees (~$5-10)
 
 ### Setup Steps
 
@@ -117,6 +118,8 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 | `PROXY_WALLET` | Your Polygon wallet address | `'0x123...'` |
 | `PRIVATE_KEY` | Your wallet private key (no 0x prefix) | `'abc123...'` |
 | `FETCH_INTERVAL` | Check interval in seconds | `1` |
+| `TRADE_MULTIPLIER` | Position size multiplier (default: 1.0) | `2.0` |
+| `RETRY_LIMIT` | Maximum retry attempts for failed orders | `3` |
 | `MONGO_URI` | MongoDB connection string | `'mongodb+srv://...'` |
 | `RPC_URL` | Polygon RPC endpoint | `'https://polygon...'` |
 
@@ -125,22 +128,35 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 **Buy Strategy:**
 - Calculates position ratio: `your_balance / (trader_balance + trade_size)`
 - Scales trade size proportionally to your capital
+- Applies multiplier to final trade size
+- Checks minimum order size ($1 minimum required by Polymarket)
 - Checks price slippage (max $0.05 difference)
 - Executes market order at best available price
 
 **Sell Strategy:**
 - Mirrors trader's sell percentage
-- If trader sells 20% of position, bot sells 20% of yours
+- Applies multiplier to position sizing
+- If trader sells 20% of position, bot sells 20% of yours (× multiplier)
 - If trader closes entire position, bot closes yours completely
+
+**Trade Multiplier:**
+
+The `TRADE_MULTIPLIER` allows you to amplify or reduce your position sizes relative to the calculated ratio:
+- `1.0` (default) - Exact proportional copying
+- `2.0` - Double the position size (more aggressive)
+- `0.5` - Half the position size (more conservative)
 
 **Example:**
 ```
 Trader (Balance: $50,000) buys $5,000 (10% of capital)
-You (Balance: $1,000) buy $91 (9.1% of capital)
+You (Balance: $1,000, Multiplier: 2.0)
 
 Position ratio: 1,000 / 55,000 = 0.0182 (1.82%)
-Your trade: $5,000 × 0.0182 = $91
+Base trade: $5,000 × 0.0182 = $91
+With 2x multiplier: $91 × 2.0 = $182 (actual trade size)
 ```
+
+⚠️ **Warning:** Higher multipliers increase both potential gains and losses. Use with caution!
 
 ---
 

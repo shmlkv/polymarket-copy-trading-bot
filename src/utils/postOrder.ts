@@ -5,6 +5,54 @@ import { ENV } from '../config/env';
 import Logger from './logger';
 
 const RETRY_LIMIT = ENV.RETRY_LIMIT;
+const TRADE_MULTIPLIER = ENV.TRADE_MULTIPLIER;
+
+const extractOrderError = (response: unknown): string | undefined => {
+    if (!response) {
+        return undefined;
+    }
+
+    if (typeof response === 'string') {
+        return response;
+    }
+
+    if (typeof response === 'object') {
+        const data = response as Record<string, unknown>;
+
+        const directError = data.error;
+        if (typeof directError === 'string') {
+            return directError;
+        }
+
+        if (typeof directError === 'object' && directError !== null) {
+            const nested = directError as Record<string, unknown>;
+            if (typeof nested.error === 'string') {
+                return nested.error;
+            }
+            if (typeof nested.message === 'string') {
+                return nested.message;
+            }
+        }
+
+        if (typeof data.errorMsg === 'string') {
+            return data.errorMsg;
+        }
+
+        if (typeof data.message === 'string') {
+            return data.message;
+        }
+    }
+
+    return undefined;
+};
+
+const isInsufficientBalanceOrAllowanceError = (message: string | undefined): boolean => {
+    if (!message) {
+        return false;
+    }
+    const lower = message.toLowerCase();
+    return lower.includes('not enough balance') || lower.includes('allowance');
+};
 
 const postOrder = async (
     clobClient: ClobClient,
@@ -26,7 +74,17 @@ const postOrder = async (
             return;
         }
         let remaining = my_position.size;
+
+        // Check minimum order size
+        const MIN_ORDER_SIZE = 1.0;
+        if (remaining < MIN_ORDER_SIZE) {
+            Logger.warning(`Position size (${remaining.toFixed(2)} tokens) too small to merge - skipping`);
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+            return;
+        }
+
         let retry = 0;
+        let abortDueToFunds = false;
         while (remaining > 0 && retry < RETRY_LIMIT) {
             const orderBook = await clobClient.getOrderBook(trade.asset);
             if (!orderBook.bids || orderBook.bids.length === 0) {
@@ -64,9 +122,22 @@ const postOrder = async (
                 Logger.orderResult(true, `Sold ${order_arges.amount} tokens at $${order_arges.price}`);
                 remaining -= order_arges.amount;
             } else {
+                const errorMessage = extractOrderError(resp);
+                if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
+                    abortDueToFunds = true;
+                    Logger.warning(`Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`);
+                    Logger.warning('Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.');
+                    break;
+                }
                 retry += 1;
-                Logger.warning(`Order failed (attempt ${retry}/${RETRY_LIMIT})`);
+                Logger.warning(
+                    `Order failed (attempt ${retry}/${RETRY_LIMIT})${errorMessage ? ` - ${errorMessage}` : ''}`
+                );
             }
+        }
+        if (abortDueToFunds) {
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
+            return;
         }
         if (retry >= RETRY_LIMIT) {
             await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: retry });
@@ -77,8 +148,22 @@ const postOrder = async (
         Logger.info('Executing BUY strategy...');
         const ratio = my_balance / (user_balance + trade.usdcSize);
         Logger.info(`Position ratio: ${(ratio * 100).toFixed(1)}%`);
-        let remaining = trade.usdcSize * ratio;
+        let remaining = trade.usdcSize * ratio * TRADE_MULTIPLIER;
+
+        if (TRADE_MULTIPLIER !== 1.0) {
+            Logger.info(`Applying ${TRADE_MULTIPLIER}x multiplier: $${(trade.usdcSize * ratio).toFixed(2)} → $${remaining.toFixed(2)}`);
+        }
+
+        // Check minimum order size (Polymarket requires min $1)
+        const MIN_ORDER_SIZE = 1.0;
+        if (remaining < MIN_ORDER_SIZE) {
+            Logger.warning(`Order size ($${remaining.toFixed(2)}) below minimum ($${MIN_ORDER_SIZE}) - skipping trade`);
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+            return;
+        }
+
         let retry = 0;
+        let abortDueToFunds = false;
         while (remaining > 0 && retry < RETRY_LIMIT) {
             const orderBook = await clobClient.getOrderBook(trade.asset);
             if (!orderBook.asks || orderBook.asks.length === 0) {
@@ -97,6 +182,15 @@ const postOrder = async (
                 await UserActivity.updateOne({ _id: trade._id }, { bot: true });
                 break;
             }
+
+            // Check if remaining amount is below minimum before creating order
+            const MIN_ORDER_SIZE = 1.0;
+            if (remaining < MIN_ORDER_SIZE) {
+                Logger.info(`Remaining amount ($${remaining.toFixed(2)}) below minimum - completing trade`);
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+                break;
+            }
+
             let order_arges;
             if (remaining <= parseFloat(minPriceAsk.size) * parseFloat(minPriceAsk.price)) {
                 order_arges = {
@@ -118,12 +212,25 @@ const postOrder = async (
             const resp = await clobClient.postOrder(signedOrder, OrderType.FOK);
             if (resp.success === true) {
                 retry = 0;
-                Logger.orderResult(true, `Sold ${order_arges.amount} tokens at $${order_arges.price}`);
+                Logger.orderResult(true, `Bought $${order_arges.amount.toFixed(2)} at $${order_arges.price}`);
                 remaining -= order_arges.amount;
             } else {
+                const errorMessage = extractOrderError(resp);
+                if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
+                    abortDueToFunds = true;
+                    Logger.warning(`Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`);
+                    Logger.warning('Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.');
+                    break;
+                }
                 retry += 1;
-                Logger.warning(`Order failed (attempt ${retry}/${RETRY_LIMIT})`);
+                Logger.warning(
+                    `Order failed (attempt ${retry}/${RETRY_LIMIT})${errorMessage ? ` - ${errorMessage}` : ''}`
+                );
             }
+        }
+        if (abortDueToFunds) {
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
+            return;
         }
         if (retry >= RETRY_LIMIT) {
             await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: retry });
@@ -136,14 +243,29 @@ const postOrder = async (
         if (!my_position) {
             Logger.warning('No position to sell');
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+            return;
         } else if (!user_position) {
-            remaining = my_position.size;
+            remaining = my_position.size * TRADE_MULTIPLIER;
         } else {
             const ratio = trade.size / (user_position.size + trade.size);
             Logger.info(`Position ratio: ${(ratio * 100).toFixed(1)}%`);
-            remaining = my_position.size * ratio;
+            remaining = my_position.size * ratio * TRADE_MULTIPLIER;
         }
+
+        if (TRADE_MULTIPLIER !== 1.0 && remaining > 0) {
+            Logger.info(`Applying ${TRADE_MULTIPLIER}x multiplier to sell amount`);
+        }
+
+        // Check minimum order size
+        const MIN_ORDER_SIZE = 1.0;
+        if (remaining < MIN_ORDER_SIZE) {
+            Logger.warning(`Position size to sell (${remaining.toFixed(2)} tokens) below minimum - skipping trade`);
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+            return;
+        }
+
         let retry = 0;
+        let abortDueToFunds = false;
         while (remaining > 0 && retry < RETRY_LIMIT) {
             const orderBook = await clobClient.getOrderBook(trade.asset);
             if (!orderBook.bids || orderBook.bids.length === 0) {
@@ -181,9 +303,22 @@ const postOrder = async (
                 Logger.orderResult(true, `Sold ${order_arges.amount} tokens at $${order_arges.price}`);
                 remaining -= order_arges.amount;
             } else {
+                const errorMessage = extractOrderError(resp);
+                if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
+                    abortDueToFunds = true;
+                    Logger.warning(`Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`);
+                    Logger.warning('Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.');
+                    break;
+                }
                 retry += 1;
-                Logger.warning(`Order failed (attempt ${retry}/${RETRY_LIMIT})`);
+                Logger.warning(
+                    `Order failed (attempt ${retry}/${RETRY_LIMIT})${errorMessage ? ` - ${errorMessage}` : ''}`
+                );
             }
+        }
+        if (abortDueToFunds) {
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
+            return;
         }
         if (retry >= RETRY_LIMIT) {
             await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: retry });

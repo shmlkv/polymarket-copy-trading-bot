@@ -25,8 +25,10 @@ const readTempTrades = async (): Promise<TradeWithUser[]> => {
     const allTrades: TradeWithUser[] = [];
 
     for (const { address, model } of userActivityModels) {
+        // Only get trades that haven't been processed yet (bot: false AND botExcutedTime: 0)
+        // This prevents processing the same trade multiple times
         const trades = await model.find({
-            $and: [{ type: 'TRADE' }, { bot: false }, { botExcutedTime: { $lt: RETRY_LIMIT } }],
+            $and: [{ type: 'TRADE' }, { bot: false }, { botExcutedTime: 0 }],
         }).exec();
 
         const tradesWithUser = trades.map((trade) => ({
@@ -42,11 +44,21 @@ const readTempTrades = async (): Promise<TradeWithUser[]> => {
 
 const doTrading = async (clobClient: ClobClient, trades: TradeWithUser[]) => {
     for (const trade of trades) {
+        // Mark trade as being processed immediately to prevent duplicate processing
+        const UserActivity = getUserActivityModel(trade.userAddress);
+        await UserActivity.updateOne(
+            { _id: trade._id },
+            { $set: { botExcutedTime: 1 } }
+        );
+
         Logger.trade(trade.userAddress, trade.side || 'UNKNOWN', {
             asset: trade.asset,
             side: trade.side,
             amount: trade.usdcSize,
             price: trade.price,
+            slug: trade.slug,
+            eventSlug: trade.eventSlug,
+            transactionHash: trade.transactionHash,
         });
 
         const my_positions: UserPositionInterface[] = await fetchData(
