@@ -126,6 +126,26 @@ class Logger {
     static clearLine() {
         process.stdout.write('\r' + ' '.repeat(100) + '\r');
     }
+
+    static positions(traders: string[], positionCounts: number[], positionDetails?: any[][]) {
+        console.log(chalk.cyan('📈 Current Open Positions:'));
+        traders.forEach((address, index) => {
+            const count = positionCounts[index];
+            const countStr = count > 0 ? chalk.green(`${count} position${count > 1 ? 's' : ''}`) : chalk.gray('0 positions');
+            console.log(chalk.gray(`   ${this.formatAddress(address)}: ${countStr}`));
+
+            // Show position details if available
+            if (positionDetails && positionDetails[index] && positionDetails[index].length > 0) {
+                positionDetails[index].forEach((pos: any) => {
+                    const pnlColor = pos.percentPnl >= 0 ? chalk.green : chalk.red;
+                    const pnlSign = pos.percentPnl >= 0 ? '+' : '';
+                    console.log(chalk.gray(`      • ${pos.outcome} - ${pos.title.slice(0, 40)}${pos.title.length > 40 ? '...' : ''}`));
+                    console.log(chalk.gray(`        Value: ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | PnL: ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`));
+                });
+            }
+        });
+        console.log('');
+    }
 }
 
 export default Logger;

@@ -61,12 +61,29 @@ const doTrading = async (clobClient: ClobClient, trades: TradeWithUser[]) => {
         const user_position = user_positions.find(
             (position: UserPositionInterface) => position.conditionId === trade.conditionId
         );
+
+        // Get USDC balance
         const my_balance = await getMyBalance(PROXY_WALLET);
-        const user_balance = await getMyBalance(trade.userAddress);
+
+        // Calculate trader's total portfolio value from positions
+        const user_balance = user_positions.reduce((total, pos) => {
+            return total + (pos.currentValue || 0);
+        }, 0);
 
         Logger.balance(my_balance, user_balance, trade.userAddress);
 
-        // TODO: Call postOrder with the trade details
+        // Execute the trade
+        await postOrder(
+            clobClient,
+            trade.side === 'BUY' ? 'buy' : 'sell',
+            my_position,
+            user_position,
+            trade,
+            my_balance,
+            user_balance,
+            trade.userAddress
+        );
+
         Logger.separator();
     }
 };
