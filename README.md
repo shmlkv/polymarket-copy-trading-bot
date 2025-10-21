@@ -42,6 +42,7 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 
 - **Multi-Trader Support** - Track and copy trades from multiple traders simultaneously
 - **Smart Position Sizing** - Automatically adjusts trade sizes based on your capital
+- **Trade Aggregation** - Combine multiple small trades into larger executable orders (NEW!)
 - **Real-time Execution** - Monitors trades every second and executes instantly
 - **Beautiful Logging** - Clean, colorful console output with structured trade information
 - **MongoDB Integration** - Persistent storage of all trades and positions
@@ -120,6 +121,8 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 | `FETCH_INTERVAL` | Check interval in seconds | `1` |
 | `TRADE_MULTIPLIER` | Position size multiplier (default: 1.0) | `2.0` |
 | `RETRY_LIMIT` | Maximum retry attempts for failed orders | `3` |
+| `TRADE_AGGREGATION_ENABLED` | Enable trade aggregation (default: false) | `true` |
+| `TRADE_AGGREGATION_WINDOW_SECONDS` | Time window for aggregation in seconds | `300` |
 | `MONGO_URI` | MongoDB connection string | `'mongodb+srv://...'` |
 | `RPC_URL` | Polygon RPC endpoint | `'https://polygon...'` |
 
@@ -157,6 +160,45 @@ With 2x multiplier: $91 × 2.0 = $182 (actual trade size)
 ```
 
 ⚠️ **Warning:** Higher multipliers increase both potential gains and losses. Use with caution!
+
+**Trade Aggregation (NEW!):**
+
+Trade aggregation solves a common problem: traders often make multiple small trades that individually fall below Polymarket's $1 minimum, but together represent a meaningful position worth copying.
+
+How it works:
+- When enabled, the bot collects small BUY trades (below $1) in a buffer
+- Trades are grouped by trader, market, and side (BUY/YES or BUY/NO)
+- After the time window expires (default: 300 seconds / 5 minutes), aggregated trades are executed as one order
+- The bot calculates a weighted average price based on all individual trades
+- If the combined total is still below $1, the trades are skipped and logged
+
+**Configuration:**
+```bash
+TRADE_AGGREGATION_ENABLED = true              # Enable the feature
+TRADE_AGGREGATION_WINDOW_SECONDS = 300        # Wait 5 minutes (default)
+```
+
+**Example scenario:**
+```
+Trader makes 3 small BUY trades on "Will Trump meet with Putin?":
+  Trade 1: $0.35 @ 52¢  (1:00 PM)
+  Trade 2: $0.25 @ 51¢  (1:02 PM)
+  Trade 3: $0.50 @ 53¢  (1:04 PM)
+
+Without aggregation: All 3 trades skipped (below $1 minimum)
+
+With aggregation enabled:
+  - Trades collected in buffer for 5 minutes
+  - At 1:05 PM window expires
+  - Total: $1.10
+  - Weighted average price: $52.27¢
+  - ✓ Executed as single $1.10 order
+```
+
+This feature is especially useful when copying traders who:
+- "Scale into" positions with multiple small entries
+- Test markets with small trades before committing larger capital
+- Trade across many markets with small position sizes
 
 ---
 

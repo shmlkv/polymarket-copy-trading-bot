@@ -54,6 +54,12 @@ export const ENV = {
     TOO_OLD_TIMESTAMP: parseInt(process.env.TOO_OLD_TIMESTAMP || '24', 10),
     RETRY_LIMIT: parseInt(process.env.RETRY_LIMIT || '3', 10),
     TRADE_MULTIPLIER: parseFloat(process.env.TRADE_MULTIPLIER || '1.0'),
+    // Trade aggregation settings
+    TRADE_AGGREGATION_ENABLED: process.env.TRADE_AGGREGATION_ENABLED === 'true',
+    TRADE_AGGREGATION_WINDOW_SECONDS: parseInt(
+        process.env.TRADE_AGGREGATION_WINDOW_SECONDS || '300',
+        10
+    ), // 5 minutes default
     MONGO_URI: process.env.MONGO_URI as string,
     RPC_URL: process.env.RPC_URL as string,
     USDC_CONTRACT_ADDRESS: process.env.USDC_CONTRACT_ADDRESS as string,
