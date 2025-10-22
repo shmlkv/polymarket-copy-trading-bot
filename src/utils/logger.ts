@@ -111,10 +111,10 @@ class Logger {
     }
 
     static balance(myBalance: number, traderBalance: number, traderAddress: string) {
-        console.log(chalk.gray('Balances:'));
-        console.log(chalk.gray(`  Your balance:   ${chalk.green.bold(`$${myBalance.toFixed(2)}`)}`));
+        console.log(chalk.gray('Capital (USDC + Positions):'));
+        console.log(chalk.gray(`  Your total capital:   ${chalk.green.bold(`$${myBalance.toFixed(2)}`)}`));
         console.log(
-            chalk.gray(`  Trader balance: ${chalk.blue.bold(`$${traderBalance.toFixed(2)}`)} (${this.formatAddress(traderAddress)})`)
+            chalk.gray(`  Trader total capital: ${chalk.blue.bold(`$${traderBalance.toFixed(2)}`)} (${this.formatAddress(traderAddress)})`)
         );
     }
 

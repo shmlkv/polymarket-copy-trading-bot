@@ -49,3 +49,5 @@ jest-test-results.json
 .prettiercache
 
 .yarn
+simulation_results
+trader_data_cache
