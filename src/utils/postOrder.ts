@@ -7,6 +7,10 @@ import Logger from './logger';
 const RETRY_LIMIT = ENV.RETRY_LIMIT;
 const TRADE_MULTIPLIER = ENV.TRADE_MULTIPLIER;
 
+// Polymarket minimum order sizes
+const MIN_ORDER_SIZE_USD = 1.0;   // Minimum order size in USD for BUY orders
+const MIN_ORDER_SIZE_TOKENS = 1.0; // Minimum order size in tokens for SELL/MERGE orders
+
 const extractOrderError = (response: unknown): string | undefined => {
     if (!response) {
         return undefined;
@@ -76,8 +80,7 @@ const postOrder = async (
         let remaining = my_position.size;
 
         // Check minimum order size
-        const MIN_ORDER_SIZE = 1.0;
-        if (remaining < MIN_ORDER_SIZE) {
+        if (remaining < MIN_ORDER_SIZE_TOKENS) {
             Logger.warning(`Position size (${remaining.toFixed(2)} tokens) too small to merge - skipping`);
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
             return;
@@ -160,11 +163,8 @@ const postOrder = async (
             `Proportional calculation: $${trade.usdcSize.toFixed(2)} × ${(ratio * 100).toFixed(3)}% = $${remaining.toFixed(4)}`
         );
 
-        // Check minimum order size (Polymarket requires min $1)
-        const MIN_ORDER_SIZE = 1.0;
-
         // Apply multiplier only if order is below minimum
-        if (remaining < MIN_ORDER_SIZE) {
+        if (remaining < MIN_ORDER_SIZE_USD) {
             const originalAmount = remaining;
             remaining = remaining * TRADE_MULTIPLIER;
 
@@ -173,12 +173,12 @@ const postOrder = async (
             );
 
             // Check again after applying multiplier
-            if (remaining < MIN_ORDER_SIZE) {
+            if (remaining < MIN_ORDER_SIZE_USD) {
                 Logger.warning(
                     `❌ Cannot execute: Final order size $${remaining.toFixed(4)} still below $1 minimum`
                 );
                 Logger.warning(
-                    `💡 Solution: Need at least $${(MIN_ORDER_SIZE / TRADE_MULTIPLIER / ratio).toFixed(2)} balance to copy this $${trade.usdcSize.toFixed(2)} trade`
+                    `💡 Solution: Need at least $${(MIN_ORDER_SIZE_USD / TRADE_MULTIPLIER / ratio).toFixed(2)} balance to copy this $${trade.usdcSize.toFixed(2)} trade`
                 );
                 Logger.warning(
                     `   (Or trader needs to make larger trades, or reduce balance difference)`
@@ -197,7 +197,7 @@ const postOrder = async (
         if (remaining > my_balance * SAFETY_BUFFER) {
             Logger.warning(`Order size ($${remaining.toFixed(2)}) exceeds available balance ($${my_balance.toFixed(2)}) - reducing to fit`);
             remaining = my_balance * SAFETY_BUFFER;
-            if (remaining < MIN_ORDER_SIZE) {
+            if (remaining < MIN_ORDER_SIZE_USD) {
                 Logger.warning(`Adjusted order size too small - skipping trade`);
                 await UserActivity.updateOne({ _id: trade._id }, { bot: true });
                 return;
@@ -226,8 +226,7 @@ const postOrder = async (
             }
 
             // Check if remaining amount is below minimum before creating order
-            const MIN_ORDER_SIZE = 1.0;
-            if (remaining < MIN_ORDER_SIZE) {
+            if (remaining < MIN_ORDER_SIZE_USD) {
                 Logger.info(`Remaining amount ($${remaining.toFixed(2)}) below minimum - completing trade`);
                 await UserActivity.updateOne({ _id: trade._id }, { bot: true });
                 break;
@@ -236,13 +235,6 @@ const postOrder = async (
             let order_arges;
             const maxOrderSize = parseFloat(minPriceAsk.size) * parseFloat(minPriceAsk.price);
             const orderSize = Math.min(remaining, maxOrderSize);
-
-            // Additional safety check: ensure order size doesn't exceed balance
-            if (orderSize > my_balance * 0.95) {
-                Logger.warning(`Order size ($${orderSize.toFixed(2)}) too close to balance ($${my_balance.toFixed(2)}) - skipping`);
-                await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
-                break;
-            }
 
             order_arges = {
                 side: Side.BUY,
@@ -325,11 +317,9 @@ const postOrder = async (
         }
 
         // Check minimum order size
-        const MIN_ORDER_SIZE = 1.0;
-
-        if (remaining < MIN_ORDER_SIZE) {
+        if (remaining < MIN_ORDER_SIZE_TOKENS) {
             Logger.warning(
-                `❌ Cannot execute: Sell amount ${remaining.toFixed(2)} tokens below minimum (${MIN_ORDER_SIZE} token)`
+                `❌ Cannot execute: Sell amount ${remaining.toFixed(2)} tokens below minimum (${MIN_ORDER_SIZE_TOKENS} token)`
             );
             Logger.warning(
                 `💡 This happens when position sizes are too small or mismatched`
@@ -362,22 +352,30 @@ const postOrder = async (
             }, orderBook.bids[0]);
 
             Logger.info(`Best bid: ${maxPriceBid.size} @ $${maxPriceBid.price}`);
-            let order_arges;
-            if (remaining <= parseFloat(maxPriceBid.size)) {
-                order_arges = {
-                    side: Side.SELL,
-                    tokenID: trade.asset,
-                    amount: remaining,
-                    price: parseFloat(maxPriceBid.price),
-                };
-            } else {
-                order_arges = {
-                    side: Side.SELL,
-                    tokenID: trade.asset,
-                    amount: parseFloat(maxPriceBid.size),
-                    price: parseFloat(maxPriceBid.price),
-                };
+
+            // Check if remaining amount is below minimum before creating order
+            if (remaining < MIN_ORDER_SIZE_TOKENS) {
+                Logger.info(`Remaining amount (${remaining.toFixed(2)} tokens) below minimum - completing trade`);
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+                break;
             }
+
+            let order_arges;
+            const sellAmount = Math.min(remaining, parseFloat(maxPriceBid.size));
+
+            // Final check: don't create orders below minimum
+            if (sellAmount < MIN_ORDER_SIZE_TOKENS) {
+                Logger.info(`Order amount (${sellAmount.toFixed(2)} tokens) below minimum - completing trade`);
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+                break;
+            }
+
+            order_arges = {
+                side: Side.SELL,
+                tokenID: trade.asset,
+                amount: sellAmount,
+                price: parseFloat(maxPriceBid.price),
+            };
             // Order args logged internally
             const signedOrder = await clobClient.createMarketOrder(order_arges);
             const resp = await clobClient.postOrder(signedOrder, OrderType.FOK);
