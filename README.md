@@ -10,6 +10,8 @@
 
 **New to the bot?** Get started in 5 minutes with our [Quick Start Guide](./docs/QUICK_START.md).
 
+**Want to test strategies first?** Try [Simulation Quick Start](./SIMULATION_QUICKSTART.md) to backtest without risking funds.
+
 Already familiar? Jump to [Installation](#installation) below.
 
 ---
@@ -29,6 +31,7 @@ The Polymarket Copy Trading Bot automatically replicates trades from successful 
 ### Position Sizing Example
 
 If you're tracking a trader with $10,000 and they buy $500 worth of shares:
+
 - Your balance: $1,000
 - Position ratio: `$1,000 / ($10,000 + $500) = 9.5%`
 - Base trade size: `$500 × 9.5% = $47.50`
@@ -42,7 +45,8 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 
 - **Multi-Trader Support** - Track and copy trades from multiple traders simultaneously
 - **Smart Position Sizing** - Automatically adjusts trade sizes based on your capital
-- **Trade Aggregation** - Combine multiple small trades into larger executable orders (NEW!)
+- **Position Tracking** - Accurately tracks purchases and sells proportionally even after balance changes (NEW!)
+- **Trade Aggregation** - Combine multiple small trades into larger executable orders
 - **Real-time Execution** - Monitors trades every second and executes instantly
 - **Beautiful Logging** - Clean, colorful console output with structured trade information
 - **MongoDB Integration** - Persistent storage of all trades and positions
@@ -62,36 +66,39 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 ### Setup Steps
 
 1. **Clone and Install**
-   ```bash
-   git clone <repository-url>
-   cd polymarket-copy-trading-bot-v1
-   npm install
-   ```
+
+    ```bash
+    git clone <repository-url>
+    cd polymarket-copy-trading-bot-v1
+    npm install
+    ```
 
 2. **Configure Environment**
-   ```bash
-   cp .env.example .env
-   ```
 
-   Edit `.env` with your settings:
-   ```bash
-   # Traders to copy (comma-separated or JSON array)
-   USER_ADDRESSES = '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b, 0x6bab41a0dc40d6dd4c1a915b8c01969479fd1292'
+    ```bash
+    cp .env.example .env
+    ```
 
-   # Your trading wallet
-   PROXY_WALLET = 'your_polygon_wallet_address'
-   PRIVATE_KEY = 'your_private_key_without_0x_prefix'
+    Edit `.env` with your settings:
 
-   # Database and RPC
-   MONGO_URI = 'mongodb+srv://user:pass@cluster.mongodb.net/database'
-   RPC_URL = 'https://polygon-mainnet.infura.io/v3/YOUR_PROJECT_ID'
-   ```
+    ```bash
+    # Traders to copy (comma-separated or JSON array)
+    USER_ADDRESSES = '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b, 0x6bab41a0dc40d6dd4c1a915b8c01969479fd1292'
+
+    # Your trading wallet
+    PROXY_WALLET = 'your_polygon_wallet_address'
+    PRIVATE_KEY = 'your_private_key_without_0x_prefix'
+
+    # Database and RPC
+    MONGO_URI = 'mongodb+srv://user:pass@cluster.mongodb.net/database'
+    RPC_URL = 'https://polygon-mainnet.infura.io/v3/YOUR_PROJECT_ID'
+    ```
 
 3. **Build and Run**
-   ```bash
-   npm run build
-   npm start
-   ```
+    ```bash
+    npm run build
+    npm start
+    ```
 
 **📖 For detailed setup instructions, see the [Quick Start Guide](./docs/QUICK_START.md).**
 
@@ -103,32 +110,34 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 
 1. Visit [Polymarket Leaderboard](https://polymarket.com/leaderboard)
 2. Look for traders with:
-   - Positive P&L (green)
-   - Win rate above 55%
-   - Active trading history
-   - Position sizes you can afford to copy proportionally
+
+    - Positive P&L (green)
+    - Win rate above 55%
+    - Active trading history
+    - Position sizes you can afford to copy proportionally
 
 3. Check their detailed stats on [Predictfolio](https://predictfolio.com)
 4. Copy their wallet address and add to `USER_ADDRESSES`
 
 ### Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `USER_ADDRESSES` | Traders to copy (comma-separated or JSON) | `'0xABC..., 0xDEF...'` |
-| `PROXY_WALLET` | Your Polygon wallet address | `'0x123...'` |
-| `PRIVATE_KEY` | Your wallet private key (no 0x prefix) | `'abc123...'` |
-| `FETCH_INTERVAL` | Check interval in seconds | `1` |
-| `TRADE_MULTIPLIER` | Position size multiplier (default: 1.0) | `2.0` |
-| `RETRY_LIMIT` | Maximum retry attempts for failed orders | `3` |
-| `TRADE_AGGREGATION_ENABLED` | Enable trade aggregation (default: false) | `true` |
-| `TRADE_AGGREGATION_WINDOW_SECONDS` | Time window for aggregation in seconds | `300` |
-| `MONGO_URI` | MongoDB connection string | `'mongodb+srv://...'` |
-| `RPC_URL` | Polygon RPC endpoint | `'https://polygon...'` |
+| Variable                           | Description                               | Example                |
+| ---------------------------------- | ----------------------------------------- | ---------------------- |
+| `USER_ADDRESSES`                   | Traders to copy (comma-separated or JSON) | `'0xABC..., 0xDEF...'` |
+| `PROXY_WALLET`                     | Your Polygon wallet address               | `'0x123...'`           |
+| `PRIVATE_KEY`                      | Your wallet private key (no 0x prefix)    | `'abc123...'`          |
+| `FETCH_INTERVAL`                   | Check interval in seconds                 | `1`                    |
+| `TRADE_MULTIPLIER`                 | Position size multiplier (default: 1.0)   | `2.0`                  |
+| `RETRY_LIMIT`                      | Maximum retry attempts for failed orders  | `3`                    |
+| `TRADE_AGGREGATION_ENABLED`        | Enable trade aggregation (default: false) | `true`                 |
+| `TRADE_AGGREGATION_WINDOW_SECONDS` | Time window for aggregation in seconds    | `300`                  |
+| `MONGO_URI`                        | MongoDB connection string                 | `'mongodb+srv://...'`  |
+| `RPC_URL`                          | Polygon RPC endpoint                      | `'https://polygon...'` |
 
 ### Trading Logic
 
 **Buy Strategy:**
+
 - Calculates position ratio: `your_balance / (trader_balance + trade_size)`
 - Scales trade size proportionally to your capital
 - Applies multiplier to final trade size
@@ -137,6 +146,7 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 - Executes market order at best available price
 
 **Sell Strategy:**
+
 - Mirrors trader's sell percentage
 - Applies multiplier to position sizing
 - If trader sells 20% of position, bot sells 20% of yours (× multiplier)
@@ -145,11 +155,13 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 **Trade Multiplier:**
 
 The `TRADE_MULTIPLIER` allows you to amplify or reduce your position sizes relative to the calculated ratio:
+
 - `1.0` (default) - Exact proportional copying
 - `2.0` - Double the position size (more aggressive)
 - `0.5` - Half the position size (more conservative)
 
 **Example:**
+
 ```
 Trader (Balance: $50,000) buys $5,000 (10% of capital)
 You (Balance: $1,000, Multiplier: 2.0)
@@ -166,6 +178,7 @@ With 2x multiplier: $91 × 2.0 = $182 (actual trade size)
 Trade aggregation solves a common problem: traders often make multiple small trades that individually fall below Polymarket's $1 minimum, but together represent a meaningful position worth copying.
 
 How it works:
+
 - When enabled, the bot collects small BUY trades (below $1) in a buffer
 - Trades are grouped by trader, market, and side (BUY/YES or BUY/NO)
 - After the time window expires (default: 300 seconds / 5 minutes), aggregated trades are executed as one order
@@ -173,12 +186,14 @@ How it works:
 - If the combined total is still below $1, the trades are skipped and logged
 
 **Configuration:**
+
 ```bash
 TRADE_AGGREGATION_ENABLED = true              # Enable the feature
 TRADE_AGGREGATION_WINDOW_SECONDS = 300        # Wait 5 minutes (default)
 ```
 
 **Example scenario:**
+
 ```
 Trader makes 3 small BUY trades on "Will Trump meet with Putin?":
   Trade 1: $0.35 @ 52¢  (1:00 PM)
@@ -196,6 +211,7 @@ With aggregation enabled:
 ```
 
 This feature is especially useful when copying traders who:
+
 - "Scale into" positions with multiple small entries
 - Test markets with small trades before committing larger capital
 - Trade across many markets with small position sizes
@@ -227,6 +243,9 @@ This feature is especially useful when copying traders who:
 
 - **[Quick Start Guide](./docs/QUICK_START.md)** - Get running in 5 minutes
 - **[Multi-Trader Guide](./docs/MULTI_TRADER_GUIDE.md)** - Advanced multi-trader setup
+- **[Position Tracking System](./docs/POSITION_TRACKING.md)** - How accurate position tracking works (NEW!)
+- **[Simulation Runner Guide](./docs/SIMULATION_RUNNER_GUIDE.md)** - Backtest strategies before going live
+- **[Simulation Guide](./docs/SIMULATION_GUIDE.md)** - How profitability simulation works
 - **[Funding Guide](./docs/FUNDING_GUIDE.md)** - How to fund your wallet with USDC and POL
 - **[Logging Preview](./docs/LOGGING_PREVIEW.md)** - See what the console output looks like
 
@@ -237,16 +256,19 @@ This feature is especially useful when copying traders who:
 ### Common Issues
 
 **Bot not detecting trades:**
+
 - Verify trader addresses are correct
 - Check that traders are actively trading
 - Ensure MongoDB connection is stable
 
 **Trades failing to execute:**
+
 - Confirm USDC balance in `PROXY_WALLET`
 - Verify you have MATIC for gas fees
 - Check `RPC_URL` is responding (try pinging endpoint)
 
 **Price slippage errors:**
+
 - Current slippage tolerance is $0.05
 - Markets may be moving too fast
 - Consider increasing `FETCH_INTERVAL` to reduce race conditions
@@ -258,6 +280,7 @@ For more help, see the full troubleshooting section in [Quick Start Guide](./doc
 ## Contributing
 
 Contributions are welcome! Please:
+
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add amazing feature'`)

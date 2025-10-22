@@ -1,7 +1,7 @@
 import { ClobClient, OrderType, Side } from '@polymarket/clob-client';
+import { ENV } from '../config/env';
 import { UserActivityInterface, UserPositionInterface } from '../interfaces/User';
 import { getUserActivityModel } from '../models/userHistory';
-import { ENV } from '../config/env';
 import Logger from './logger';
 
 const RETRY_LIMIT = ENV.RETRY_LIMIT;
@@ -206,6 +206,8 @@ const postOrder = async (
 
         let retry = 0;
         let abortDueToFunds = false;
+        let totalBoughtTokens = 0; // Track total tokens bought for this trade
+
         while (remaining > 0 && retry < RETRY_LIMIT) {
             const orderBook = await clobClient.getOrderBook(trade.asset);
             if (!orderBook.asks || orderBook.asks.length === 0) {
@@ -228,15 +230,14 @@ const postOrder = async (
             // Check if remaining amount is below minimum before creating order
             if (remaining < MIN_ORDER_SIZE_USD) {
                 Logger.info(`Remaining amount ($${remaining.toFixed(2)}) below minimum - completing trade`);
-                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+                await UserActivity.updateOne({ _id: trade._id }, { bot: true, myBoughtSize: totalBoughtTokens });
                 break;
             }
 
-            let order_arges;
             const maxOrderSize = parseFloat(minPriceAsk.size) * parseFloat(minPriceAsk.price);
             const orderSize = Math.min(remaining, maxOrderSize);
 
-            order_arges = {
+            const order_arges = {
                 side: Side.BUY,
                 tokenID: trade.asset,
                 amount: orderSize,
@@ -249,7 +250,9 @@ const postOrder = async (
             const resp = await clobClient.postOrder(signedOrder, OrderType.FOK);
             if (resp.success === true) {
                 retry = 0;
-                Logger.orderResult(true, `Bought $${order_arges.amount.toFixed(2)} at $${order_arges.price}`);
+                const tokensBought = order_arges.amount / order_arges.price;
+                totalBoughtTokens += tokensBought;
+                Logger.orderResult(true, `Bought $${order_arges.amount.toFixed(2)} at $${order_arges.price} (${tokensBought.toFixed(2)} tokens)`);
                 remaining -= order_arges.amount;
             } else {
                 const errorMessage = extractOrderError(resp);
@@ -266,13 +269,18 @@ const postOrder = async (
             }
         }
         if (abortDueToFunds) {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT, myBoughtSize: totalBoughtTokens });
             return;
         }
         if (retry >= RETRY_LIMIT) {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: retry });
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: retry, myBoughtSize: totalBoughtTokens });
         } else {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true, myBoughtSize: totalBoughtTokens });
+        }
+
+        // Log the tracked purchase for later sell reference
+        if (totalBoughtTokens > 0) {
+            Logger.info(`📝 Tracked purchase: ${totalBoughtTokens.toFixed(2)} tokens for future sell calculations`);
         }
     } else if (condition === 'sell') {
         //Sell strategy
@@ -282,7 +290,24 @@ const postOrder = async (
             Logger.warning('No position to sell');
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
             return;
-        } else if (!user_position) {
+        }
+
+        // Get all previous BUY trades for this asset to calculate total bought
+        const previousBuys = await UserActivity.find({
+            asset: trade.asset,
+            conditionId: trade.conditionId,
+            side: 'BUY',
+            bot: true,
+            myBoughtSize: { $exists: true, $gt: 0 }
+        }).exec();
+
+        const totalBoughtTokens = previousBuys.reduce((sum, buy) => sum + (buy.myBoughtSize || 0), 0);
+
+        if (totalBoughtTokens > 0) {
+            Logger.info(`📊 Found ${previousBuys.length} previous purchases: ${totalBoughtTokens.toFixed(2)} tokens bought`);
+        }
+
+        if (!user_position) {
             // Trader sold entire position - we sell entire position too
             remaining = my_position.size;
             Logger.info(
@@ -300,11 +325,19 @@ const postOrder = async (
                 `Trader selling: ${trade.size.toFixed(2)} tokens (${(trader_sell_percent * 100).toFixed(2)}% of their position)`
             );
 
-            // Apply same % to our position
-            const baseSellSize = my_position.size * trader_sell_percent;
-            Logger.info(
-                `Your ${(trader_sell_percent * 100).toFixed(2)}% = ${baseSellSize.toFixed(2)} tokens`
-            );
+            // Use tracked bought tokens if available, otherwise fallback to current position
+            let baseSellSize;
+            if (totalBoughtTokens > 0) {
+                baseSellSize = totalBoughtTokens * trader_sell_percent;
+                Logger.info(
+                    `Calculating from tracked purchases: ${totalBoughtTokens.toFixed(2)} × ${(trader_sell_percent * 100).toFixed(2)}% = ${baseSellSize.toFixed(2)} tokens`
+                );
+            } else {
+                baseSellSize = my_position.size * trader_sell_percent;
+                Logger.warning(
+                    `No tracked purchases found, using current position: ${my_position.size.toFixed(2)} × ${(trader_sell_percent * 100).toFixed(2)}% = ${baseSellSize.toFixed(2)} tokens`
+                );
+            }
 
             // Apply multiplier symmetrically with BUY logic
             remaining = baseSellSize * TRADE_MULTIPLIER;
@@ -339,6 +372,8 @@ const postOrder = async (
 
         let retry = 0;
         let abortDueToFunds = false;
+        let totalSoldTokens = 0; // Track total tokens sold
+
         while (remaining > 0 && retry < RETRY_LIMIT) {
             const orderBook = await clobClient.getOrderBook(trade.asset);
             if (!orderBook.bids || orderBook.bids.length === 0) {
@@ -360,7 +395,6 @@ const postOrder = async (
                 break;
             }
 
-            let order_arges;
             const sellAmount = Math.min(remaining, parseFloat(maxPriceBid.size));
 
             // Final check: don't create orders below minimum
@@ -370,7 +404,7 @@ const postOrder = async (
                 break;
             }
 
-            order_arges = {
+            const order_arges = {
                 side: Side.SELL,
                 tokenID: trade.asset,
                 amount: sellAmount,
@@ -381,6 +415,7 @@ const postOrder = async (
             const resp = await clobClient.postOrder(signedOrder, OrderType.FOK);
             if (resp.success === true) {
                 retry = 0;
+                totalSoldTokens += order_arges.amount;
                 Logger.orderResult(true, `Sold ${order_arges.amount} tokens at $${order_arges.price}`);
                 remaining -= order_arges.amount;
             } else {
@@ -397,6 +432,37 @@ const postOrder = async (
                 );
             }
         }
+
+        // Update tracked purchases after successful sell
+        if (totalSoldTokens > 0 && totalBoughtTokens > 0) {
+            const sellPercentage = totalSoldTokens / totalBoughtTokens;
+
+            if (sellPercentage >= 0.99) {
+                // Sold essentially all tracked tokens - clear tracking
+                await UserActivity.updateMany(
+                    {
+                        asset: trade.asset,
+                        conditionId: trade.conditionId,
+                        side: 'BUY',
+                        bot: true,
+                        myBoughtSize: { $exists: true, $gt: 0 }
+                    },
+                    { $set: { myBoughtSize: 0 } }
+                );
+                Logger.info(`🧹 Cleared purchase tracking (sold ${(sellPercentage * 100).toFixed(1)}% of position)`);
+            } else {
+                // Partial sell - reduce tracked purchases proportionally
+                for (const buy of previousBuys) {
+                    const newSize = (buy.myBoughtSize || 0) * (1 - sellPercentage);
+                    await UserActivity.updateOne(
+                        { _id: buy._id },
+                        { $set: { myBoughtSize: newSize } }
+                    );
+                }
+                Logger.info(`📝 Updated purchase tracking (sold ${(sellPercentage * 100).toFixed(1)}% of tracked position)`);
+            }
+        }
+
         if (abortDueToFunds) {
             await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
             return;
