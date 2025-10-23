@@ -2,7 +2,7 @@
 
 > **Copy the best, automate success.** Mirror trades from top Polymarket traders with intelligent position sizing and real-time execution.
 
-![Polymarket Copy Trading Bot](./docs/screenshot.png)
+![Polymarket Copy Trading Bot](https://github.com/user-attachments/assets/83a2f84e-88c2-4f2f-9f21-48d244b37b0c)
 
 **Example trader:** Check performance on [Predictfolio](https://predictfolio.com/dashboard/0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b)
 
