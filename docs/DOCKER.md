@@ -674,6 +674,6 @@ If you encounter issues:
 
 ---
 
-**Last Updated:** October 2024
+**Last Updated:** October 2025
 
 **Note:** This guide assumes Docker Compose V2. If using V1, replace `docker-compose` with `docker compose` (with space instead of hyphen).
