@@ -104,6 +104,63 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 
 ---
 
+## 🐳 Docker Deployment
+
+**Prefer Docker?** Deploy the bot with Docker Compose for a production-ready setup with MongoDB and optional VPN included.
+
+### Quick Start with Docker
+
+```bash
+# 1. Clone and configure
+git clone <repository-url>
+cd polymarket-copy-trading-bot
+cp .env.example .env
+cp .env.docker.example .env.docker
+
+# 2. Edit configuration files
+nano .env              # Configure bot settings (wallet, traders, etc.)
+nano .env.docker       # Configure Docker infrastructure (MongoDB, VPN)
+
+# 3. Export Docker env vars and start
+export $(cat .env.docker | grep -v '^#' | xargs)
+docker-compose up -d
+
+# 4. View logs
+docker-compose logs -f polymarket
+```
+
+### What's Included
+
+- **🐳 Isolated Environment** - Bot runs in containerized environment
+- **🗄️ MongoDB Container** - Database included, no separate installation needed
+- **🔒 Optional VPN** - WireGuard VPN support for geographic restrictions
+- **♻️ Auto-restart** - Containers restart automatically on failure
+- **📊 Health Checks** - Ensures services are healthy before starting bot
+
+### Docker vs Manual Installation
+
+| Feature | Docker | Manual Install |
+|---------|--------|----------------|
+| **Setup Time** | ⚡ 5 minutes | ⏱️ 15-30 minutes |
+| **MongoDB** | ✅ Included | ❌ Separate install |
+| **VPN Support** | ✅ Built-in (optional) | ❌ Manual config |
+| **Isolation** | ✅ Containerized | ❌ System-wide |
+| **Updates** | ✅ Simple rebuild | 🔄 Manual steps |
+| **Best For** | Production, VPS | Development, local |
+
+### Learn More
+
+📖 **[Complete Docker Guide →](./docs/DOCKER.md)**
+
+The comprehensive guide covers:
+- Detailed configuration (MongoDB, VPN)
+- Container management commands
+- Troubleshooting common issues
+- Security best practices
+- Advanced configuration options
+
+---
+
 ## Configuration
 
 ### Finding Traders to Copy
