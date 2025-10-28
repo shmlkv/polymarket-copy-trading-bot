@@ -137,17 +137,6 @@ docker-compose logs -f polymarket
 - **♻️ Auto-restart** - Containers restart automatically on failure
 - **📊 Health Checks** - Ensures services are healthy before starting bot
 
-### Docker vs Manual Installation
-
-| Feature | Docker | Manual Install |
-|---------|--------|----------------|
-| **Setup Time** | ⚡ 5 minutes | ⏱️ 15-30 minutes |
-| **MongoDB** | ✅ Included | ❌ Separate install |
-| **VPN Support** | ✅ Built-in (optional) | ❌ Manual config |
-| **Isolation** | ✅ Containerized | ❌ System-wide |
-| **Updates** | ✅ Simple rebuild | 🔄 Manual steps |
-| **Best For** | Production, VPS | Development, local |
-
 ### Learn More
 
 📖 **[Complete Docker Guide →](./docs/DOCKER.md)**
