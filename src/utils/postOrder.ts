@@ -6,6 +6,7 @@ import Logger from './logger';
 
 const RETRY_LIMIT = ENV.RETRY_LIMIT;
 const TRADE_MULTIPLIER = ENV.TRADE_MULTIPLIER;
+const COPY_PERCENTAGE = ENV.COPY_PERCENTAGE;
 
 // Polymarket minimum order sizes
 const MIN_ORDER_SIZE_USD = 1.0;   // Minimum order size in USD for BUY orders
@@ -149,47 +150,38 @@ const postOrder = async (
         }
     } else if (condition === 'buy') {       //Buy strategy
         Logger.info('Executing BUY strategy...');
-        const ratio = my_balance / (user_balance + trade.usdcSize);
-        const balanceDiff = (user_balance + trade.usdcSize) / my_balance;
 
-        Logger.info(
-            `Balance comparison: You have $${my_balance.toFixed(2)} vs Trader's $${(user_balance + trade.usdcSize).toFixed(2)} (${balanceDiff.toFixed(1)}x larger)`
-        );
+        Logger.info(`Your balance: $${my_balance.toFixed(2)}`);
         Logger.info(`Trader bought: $${trade.usdcSize.toFixed(2)}`);
 
-        // Calculate base order size without multiplier
-        let remaining = trade.usdcSize * ratio;
+        // NEW FIXED LOGIC: Copy fixed percentage of trader's order size
+        let remaining = trade.usdcSize * (COPY_PERCENTAGE / 100);
         Logger.info(
-            `Proportional calculation: $${trade.usdcSize.toFixed(2)} × ${(ratio * 100).toFixed(3)}% = $${remaining.toFixed(4)}`
+            `Copy calculation: $${trade.usdcSize.toFixed(2)} × ${COPY_PERCENTAGE}% = $${remaining.toFixed(4)}`
         );
 
-        // Apply multiplier only if order is below minimum
-        if (remaining < MIN_ORDER_SIZE_USD) {
-            const originalAmount = remaining;
+        // Apply multiplier
+        if (TRADE_MULTIPLIER !== 1.0) {
+            const beforeMultiplier = remaining;
             remaining = remaining * TRADE_MULTIPLIER;
-
             Logger.info(
-                `Applying ${TRADE_MULTIPLIER}x multiplier (trade < $1): $${originalAmount.toFixed(4)} → $${remaining.toFixed(4)}`
+                `Applying ${TRADE_MULTIPLIER}x multiplier: $${beforeMultiplier.toFixed(4)} → $${remaining.toFixed(4)}`
             );
+        }
 
-            // Check again after applying multiplier
-            if (remaining < MIN_ORDER_SIZE_USD) {
-                Logger.warning(
-                    `❌ Cannot execute: Final order size $${remaining.toFixed(4)} still below $1 minimum`
-                );
-                Logger.warning(
-                    `💡 Solution: Need at least $${(MIN_ORDER_SIZE_USD / TRADE_MULTIPLIER / ratio).toFixed(2)} balance to copy this $${trade.usdcSize.toFixed(2)} trade`
-                );
-                Logger.warning(
-                    `   (Or trader needs to make larger trades, or reduce balance difference)`
-                );
-                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
-                return;
-            }
-        } else {
-            Logger.info(
-                `Order size: $${remaining.toFixed(2)} (already above $1, no multiplier needed)`
+        // Check minimum order size
+        if (remaining < MIN_ORDER_SIZE_USD) {
+            Logger.warning(
+                `❌ Cannot execute: Order size $${remaining.toFixed(4)} below $1 minimum`
             );
+            Logger.warning(
+                `💡 Trader's order ($${trade.usdcSize.toFixed(2)}) × ${COPY_PERCENTAGE}% × ${TRADE_MULTIPLIER}x = $${remaining.toFixed(4)}`
+            );
+            Logger.warning(
+                `   Increase COPY_PERCENTAGE or wait for larger trades`
+            );
+            await UserActivity.updateOne({ _id: trade._id }, { bot: true });
+            return;
         }
 
         // Check if we have enough available balance (leave 1% buffer for fees/rounding)
