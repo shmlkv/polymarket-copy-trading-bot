@@ -11,6 +11,7 @@
         "set-token-allowance": "ts-node src/scripts/setTokenAllowance.ts",
         "manual-sell": "ts-node src/scripts/manualSell.ts",
         "sell-large": "ts-node src/scripts/sellLargePositions.ts",
+        "transfer-to-gnosis": "ts-node src/scripts/transferPositionsToGnosisSafe.ts",
         "fetch-history": "ts-node src/scripts/fetchHistoricalTrades.ts",
         "simulate": "ts-node src/scripts/simulateProfitability.ts",
         "simulate-old": "ts-node src/scripts/simulateProfitabilityOldLogic.ts",

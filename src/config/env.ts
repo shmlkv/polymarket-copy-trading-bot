@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+import { CopyStrategy, CopyStrategyConfig } from './copyStrategy';
 dotenv.config();
 
 if (!process.env.USER_ADDRESSES) {
@@ -44,6 +45,58 @@ const parseUserAddresses = (input: string): string[] => {
     return trimmed.split(',').map((addr) => addr.toLowerCase().trim()).filter((addr) => addr.length > 0);
 };
 
+// Parse copy strategy configuration
+const parseCopyStrategy = (): CopyStrategyConfig => {
+    // Support legacy COPY_PERCENTAGE + TRADE_MULTIPLIER for backward compatibility
+    const hasLegacyConfig = process.env.COPY_PERCENTAGE && !process.env.COPY_STRATEGY;
+
+    if (hasLegacyConfig) {
+        console.warn('⚠️  Using legacy COPY_PERCENTAGE configuration. Consider migrating to COPY_STRATEGY.');
+        const copyPercentage = parseFloat(process.env.COPY_PERCENTAGE || '10.0');
+        const tradeMultiplier = parseFloat(process.env.TRADE_MULTIPLIER || '1.0');
+        const effectivePercentage = copyPercentage * tradeMultiplier;
+
+        return {
+            strategy: CopyStrategy.PERCENTAGE,
+            copySize: effectivePercentage,
+            maxOrderSizeUSD: parseFloat(process.env.MAX_ORDER_SIZE_USD || '100.0'),
+            minOrderSizeUSD: parseFloat(process.env.MIN_ORDER_SIZE_USD || '1.0'),
+            maxPositionSizeUSD: process.env.MAX_POSITION_SIZE_USD
+                ? parseFloat(process.env.MAX_POSITION_SIZE_USD)
+                : undefined,
+            maxDailyVolumeUSD: process.env.MAX_DAILY_VOLUME_USD
+                ? parseFloat(process.env.MAX_DAILY_VOLUME_USD)
+                : undefined,
+        };
+    }
+
+    // Parse new copy strategy configuration
+    const strategyStr = (process.env.COPY_STRATEGY || 'PERCENTAGE').toUpperCase();
+    const strategy = CopyStrategy[strategyStr as keyof typeof CopyStrategy] || CopyStrategy.PERCENTAGE;
+
+    const config: CopyStrategyConfig = {
+        strategy,
+        copySize: parseFloat(process.env.COPY_SIZE || '10.0'),
+        maxOrderSizeUSD: parseFloat(process.env.MAX_ORDER_SIZE_USD || '100.0'),
+        minOrderSizeUSD: parseFloat(process.env.MIN_ORDER_SIZE_USD || '1.0'),
+        maxPositionSizeUSD: process.env.MAX_POSITION_SIZE_USD
+            ? parseFloat(process.env.MAX_POSITION_SIZE_USD)
+            : undefined,
+        maxDailyVolumeUSD: process.env.MAX_DAILY_VOLUME_USD
+            ? parseFloat(process.env.MAX_DAILY_VOLUME_USD)
+            : undefined,
+    };
+
+    // Add adaptive strategy parameters if applicable
+    if (strategy === CopyStrategy.ADAPTIVE) {
+        config.adaptiveMinPercent = parseFloat(process.env.ADAPTIVE_MIN_PERCENT || config.copySize.toString());
+        config.adaptiveMaxPercent = parseFloat(process.env.ADAPTIVE_MAX_PERCENT || config.copySize.toString());
+        config.adaptiveThreshold = parseFloat(process.env.ADAPTIVE_THRESHOLD_USD || '500.0');
+    }
+
+    return config;
+};
+
 export const ENV = {
     USER_ADDRESSES: parseUserAddresses(process.env.USER_ADDRESSES as string),
     PROXY_WALLET: process.env.PROXY_WALLET as string,
@@ -53,8 +106,11 @@ export const ENV = {
     FETCH_INTERVAL: parseInt(process.env.FETCH_INTERVAL || '1', 10),
     TOO_OLD_TIMESTAMP: parseInt(process.env.TOO_OLD_TIMESTAMP || '24', 10),
     RETRY_LIMIT: parseInt(process.env.RETRY_LIMIT || '3', 10),
+    // Legacy parameters (kept for backward compatibility)
     TRADE_MULTIPLIER: parseFloat(process.env.TRADE_MULTIPLIER || '1.0'),
     COPY_PERCENTAGE: parseFloat(process.env.COPY_PERCENTAGE || '10.0'),
+    // New copy strategy configuration
+    COPY_STRATEGY_CONFIG: parseCopyStrategy(),
     // Network settings
     REQUEST_TIMEOUT_MS: parseInt(process.env.REQUEST_TIMEOUT_MS || '10000', 10),
     NETWORK_RETRY_LIMIT: parseInt(process.env.NETWORK_RETRY_LIMIT || '3', 10),

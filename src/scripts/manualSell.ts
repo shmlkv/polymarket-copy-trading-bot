@@ -11,8 +11,8 @@ const POLYGON_CHAIN_ID = 137;
 const RETRY_LIMIT = ENV.RETRY_LIMIT;
 
 // ABI для получения информации о рынке
-const MARKET_SEARCH_QUERY = 'Mariners vs. Blue Jays';
-const SELL_PERCENTAGE = 0.9; // 90%
+const MARKET_SEARCH_QUERY = 'Maduro out in 2025';
+const SELL_PERCENTAGE = 0.7; // 70%
 
 interface Position {
     asset: string;

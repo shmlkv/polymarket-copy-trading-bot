@@ -62,6 +62,7 @@ interface SimulationResult {
 interface SimulatedPosition {
     market: string;
     outcome: string;
+    sharesHeld: number; // Track actual shares owned
     entryPrice: number;
     exitPrice: number | null;
     invested: number;
@@ -88,6 +89,11 @@ const HISTORY_DAYS = (() => {
     return Number.isFinite(value) && value > 0 ? Math.floor(value) : 7;
 })();
 const MULTIPLIER = ENV.TRADE_MULTIPLIER || 1.0;
+const COPY_PERCENTAGE = (() => {
+    const raw = process.env.COPY_PERCENTAGE;
+    const value = raw ? Number(raw) : 10.0;
+    return Number.isFinite(value) && value > 0 ? value : 10.0;
+})(); // % of trader's order size to copy (default: 10%)
 const MIN_ORDER_SIZE = (() => {
     const raw = process.env.SIM_MIN_ORDER_USD;
     const value = raw ? Number(raw) : 1.0;
@@ -243,26 +249,6 @@ async function fetchTraderPositions(): Promise<Position[]> {
     }
 }
 
-async function getTraderCapitalAtTime(timestamp: number, trades: Trade[]): Promise<number> {
-    // Simplified: calculate based on trades up to this point
-    // In reality, we'd need historical position values
-    // For now, approximate based on cumulative trades
-
-    const pastTrades = trades.filter(t => t.timestamp <= timestamp);
-    let capital = 100000; // Assume starting capital
-
-    // Rough approximation
-    pastTrades.forEach(trade => {
-        if (trade.side === 'BUY') {
-            capital -= trade.usdcSize;
-        } else {
-            capital += trade.usdcSize;
-        }
-    });
-
-    return Math.max(capital, 50000); // Minimum floor
-}
-
 async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
     console.log(colors.cyan('\n🎮 Starting simulation...\n'));
 
@@ -274,14 +260,8 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
     const positions = new Map<string, SimulatedPosition>();
 
     for (const trade of trades) {
-        // Get trader's capital at this time (simplified)
-        const traderCapital = await getTraderCapitalAtTime(trade.timestamp, trades);
-
-        // Calculate what % of capital trader is spending
-        const traderPercent = trade.usdcSize / traderCapital;
-
-        // Calculate our order size
-        const baseOrderSize = yourCapital * traderPercent;
+        // NEW LOGIC: Copy fixed percentage of trader's order size
+        const baseOrderSize = trade.usdcSize * (COPY_PERCENTAGE / 100);
         let orderSize = baseOrderSize * MULTIPLIER;
 
         // Check if order meets minimum
@@ -309,10 +289,11 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
                 positions.set(positionKey, {
                     market: trade.market || trade.asset || 'Unknown market',
                     outcome: trade.outcome,
+                    sharesHeld: 0, // Initialize shares
                     entryPrice: trade.price,
                     exitPrice: null,
-                    invested: orderSize,
-                    currentValue: orderSize,
+                    invested: 0,
+                    currentValue: 0,
                     pnl: 0,
                     closed: false,
                     trades: [],
@@ -320,17 +301,22 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
             }
 
             const pos = positions.get(positionKey)!;
+
+            // Track shares properly
+            pos.sharesHeld += sharesReceived;
+            pos.invested += orderSize;
+            pos.currentValue = pos.sharesHeld * trade.price;
+
             pos.trades.push({
                 timestamp: trade.timestamp,
                 side: 'BUY',
                 price: trade.price,
                 size: sharesReceived,
                 usdcSize: orderSize,
-                traderPercent: traderPercent * 100,
+                traderPercent: (trade.usdcSize / 100000) * 100, // Placeholder for display
                 yourSize: orderSize,
             });
 
-            pos.invested += orderSize;
             yourCapital -= orderSize;
             totalInvested += orderSize;
             copiedTrades++;
@@ -340,27 +326,46 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
             if (positions.has(positionKey)) {
                 const pos = positions.get(positionKey)!;
 
-                // Calculate how much to sell based on trader's sell %
-                const traderSellPercent = trade.usdcSize / traderCapital;
-                const sellAmount = Math.min(orderSize, pos.currentValue);
+                if (pos.sharesHeld <= 0) {
+                    skippedTrades++;
+                    continue;
+                }
+
+                // Calculate proportional sell based on trader's order
+                const traderSellShares = trade.usdcSize / trade.price;
+                const traderTotalShares = traderSellShares / 0.1; // Estimate (we don't know trader's exact position)
+                const traderSellPercent = Math.min(traderSellShares / traderTotalShares, 1.0);
+
+                // Sell same proportion of our shares
+                const sharesToSell = Math.min(pos.sharesHeld * traderSellPercent, pos.sharesHeld);
+                const sellAmount = sharesToSell * trade.price;
+
+                pos.sharesHeld -= sharesToSell;
+                pos.currentValue = pos.sharesHeld * trade.price;
+                pos.exitPrice = trade.price;
 
                 pos.trades.push({
                     timestamp: trade.timestamp,
                     side: 'SELL',
                     price: trade.price,
-                    size: sellAmount / trade.price,
+                    size: sharesToSell,
                     usdcSize: sellAmount,
-                    traderPercent: traderPercent * 100,
+                    traderPercent: traderSellPercent * 100,
                     yourSize: sellAmount,
                 });
 
-                pos.currentValue -= sellAmount;
-                pos.exitPrice = trade.price;
                 yourCapital += sellAmount;
 
-                if (pos.currentValue < 0.01) {
+                if (pos.sharesHeld < 0.01) {
                     pos.closed = true;
-                    pos.pnl = yourCapital - pos.invested;
+                    // Calculate final P&L
+                    const totalBought = pos.trades
+                        .filter(t => t.side === 'BUY')
+                        .reduce((sum, t) => sum + t.usdcSize, 0);
+                    const totalSold = pos.trades
+                        .filter(t => t.side === 'SELL')
+                        .reduce((sum, t) => sum + t.usdcSize, 0);
+                    pos.pnl = totalSold - totalBought;
                 }
 
                 copiedTrades++;
@@ -384,24 +389,15 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
 
             if (traderPos) {
                 const currentPrice = traderPos.currentValue / traderPos.size;
-                const totalShares = simPos.trades
-                    .filter(t => t.side === 'BUY')
-                    .reduce((sum, t) => sum + t.size, 0);
-                simPos.currentValue = totalShares * currentPrice;
+                // Use tracked sharesHeld instead of recalculating
+                simPos.currentValue = simPos.sharesHeld * currentPrice;
             }
 
             simPos.pnl = simPos.currentValue - simPos.invested;
             unrealizedPnl += simPos.pnl;
             totalCurrentValue += simPos.currentValue;
         } else {
-            // Closed position - calculate realized P&L
-            const totalBought = simPos.trades
-                .filter(t => t.side === 'BUY')
-                .reduce((sum, t) => sum + t.usdcSize, 0);
-            const totalSold = simPos.trades
-                .filter(t => t.side === 'SELL')
-                .reduce((sum, t) => sum + t.usdcSize, 0);
-            simPos.pnl = totalSold - totalBought;
+            // Closed position - P&L already calculated
             realizedPnl += simPos.pnl;
         }
     }
@@ -415,8 +411,8 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
 
     return {
         id: `sim_${TRADER_ADDRESS.slice(0, 8)}_${Date.now()}`,
-        name: `NEW_${TRADER_ADDRESS.slice(0, 6)}_${HISTORY_DAYS}d`,
-        logic: 'capital_percentage',
+        name: `FIXED_${TRADER_ADDRESS.slice(0, 6)}_${HISTORY_DAYS}d_copy${COPY_PERCENTAGE}pct`,
+        logic: 'fixed_percentage',
         timestamp: Date.now(),
         traderAddress: TRADER_ADDRESS,
         startingCapital: STARTING_CAPITAL,
@@ -436,10 +432,11 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
 
 function printReport(result: SimulationResult) {
     console.log('\n' + colors.cyan('═'.repeat(80)));
-    console.log(colors.cyan('  📊 COPY TRADING SIMULATION REPORT'));
+    console.log(colors.cyan('  📊 COPY TRADING SIMULATION REPORT (FIXED ALGORITHM)'));
     console.log(colors.cyan('═'.repeat(80)) + '\n');
 
     console.log('Trader:', colors.blue(result.traderAddress));
+    console.log('Copy %:', colors.yellow(`${COPY_PERCENTAGE}%`), colors.gray('(of trader order size)'));
     console.log('Multiplier:', colors.yellow(`${MULTIPLIER}x`));
     console.log();
 
@@ -502,9 +499,10 @@ function printReport(result: SimulationResult) {
 }
 
 async function main() {
-    console.log(colors.cyan('\n🚀 POLYMARKET COPY TRADING PROFITABILITY SIMULATOR\n'));
+    console.log(colors.cyan('\n🚀 POLYMARKET COPY TRADING PROFITABILITY SIMULATOR (FIXED)\n'));
     console.log(colors.gray(`Trader: ${TRADER_ADDRESS}`));
     console.log(colors.gray(`Starting Capital: $${STARTING_CAPITAL}`));
+    console.log(colors.gray(`Copy Percentage: ${COPY_PERCENTAGE}% (of trader order size)`));
     console.log(colors.gray(`Multiplier: ${MULTIPLIER}x`));
     console.log(colors.gray(`History window: ${HISTORY_DAYS} day(s), max trades: ${MAX_TRADES_LIMIT}\n`));
 
@@ -527,7 +525,7 @@ async function main() {
             if (!raw) return '';
             return '_' + raw.trim().replace(/[^a-zA-Z0-9-_]+/g, '-');
         })();
-        const filename = `new_logic_${TRADER_ADDRESS}_${HISTORY_DAYS}d${tag}_${new Date().toISOString().split('T')[0]}.json`;
+        const filename = `fixed_logic_${TRADER_ADDRESS}_${HISTORY_DAYS}d_copy${COPY_PERCENTAGE}pct${tag}_${new Date().toISOString().split('T')[0]}.json`;
         const filepath = path.join(resultsDir, filename);
 
         fs.writeFileSync(filepath, JSON.stringify(result, null, 2), 'utf8');

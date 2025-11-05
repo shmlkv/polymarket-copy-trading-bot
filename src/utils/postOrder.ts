@@ -3,8 +3,12 @@ import { ENV } from '../config/env';
 import { UserActivityInterface, UserPositionInterface } from '../interfaces/User';
 import { getUserActivityModel } from '../models/userHistory';
 import Logger from './logger';
+import { calculateOrderSize } from '../config/copyStrategy';
 
 const RETRY_LIMIT = ENV.RETRY_LIMIT;
+const COPY_STRATEGY_CONFIG = ENV.COPY_STRATEGY_CONFIG;
+
+// Legacy parameters (for backward compatibility in SELL logic)
 const TRADE_MULTIPLIER = ENV.TRADE_MULTIPLIER;
 const COPY_PERCENTAGE = ENV.COPY_PERCENTAGE;
 
@@ -154,47 +158,31 @@ const postOrder = async (
         Logger.info(`Your balance: $${my_balance.toFixed(2)}`);
         Logger.info(`Trader bought: $${trade.usdcSize.toFixed(2)}`);
 
-        // NEW FIXED LOGIC: Copy fixed percentage of trader's order size
-        let remaining = trade.usdcSize * (COPY_PERCENTAGE / 100);
-        Logger.info(
-            `Copy calculation: $${trade.usdcSize.toFixed(2)} × ${COPY_PERCENTAGE}% = $${remaining.toFixed(4)}`
+        // Get current position size for position limit checks
+        const currentPositionValue = my_position ? my_position.size * my_position.avgPrice : 0;
+
+        // Use new copy strategy system
+        const orderCalc = calculateOrderSize(
+            COPY_STRATEGY_CONFIG,
+            trade.usdcSize,
+            my_balance,
+            currentPositionValue
         );
 
-        // Apply multiplier
-        if (TRADE_MULTIPLIER !== 1.0) {
-            const beforeMultiplier = remaining;
-            remaining = remaining * TRADE_MULTIPLIER;
-            Logger.info(
-                `Applying ${TRADE_MULTIPLIER}x multiplier: $${beforeMultiplier.toFixed(4)} → $${remaining.toFixed(4)}`
-            );
-        }
+        // Log the calculation reasoning
+        Logger.info(`📊 ${orderCalc.reasoning}`);
 
-        // Check minimum order size
-        if (remaining < MIN_ORDER_SIZE_USD) {
-            Logger.warning(
-                `❌ Cannot execute: Order size $${remaining.toFixed(4)} below $1 minimum`
-            );
-            Logger.warning(
-                `💡 Trader's order ($${trade.usdcSize.toFixed(2)}) × ${COPY_PERCENTAGE}% × ${TRADE_MULTIPLIER}x = $${remaining.toFixed(4)}`
-            );
-            Logger.warning(
-                `   Increase COPY_PERCENTAGE or wait for larger trades`
-            );
+        // Check if order should be executed
+        if (orderCalc.finalAmount === 0) {
+            Logger.warning(`❌ Cannot execute: ${orderCalc.reasoning}`);
+            if (orderCalc.belowMinimum) {
+                Logger.warning(`💡 Increase COPY_SIZE or wait for larger trades`);
+            }
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
             return;
         }
 
-        // Check if we have enough available balance (leave 1% buffer for fees/rounding)
-        const SAFETY_BUFFER = 0.99;
-        if (remaining > my_balance * SAFETY_BUFFER) {
-            Logger.warning(`Order size ($${remaining.toFixed(2)}) exceeds available balance ($${my_balance.toFixed(2)}) - reducing to fit`);
-            remaining = my_balance * SAFETY_BUFFER;
-            if (remaining < MIN_ORDER_SIZE_USD) {
-                Logger.warning(`Adjusted order size too small - skipping trade`);
-                await UserActivity.updateOne({ _id: trade._id }, { bot: true });
-                return;
-            }
-        }
+        let remaining = orderCalc.finalAmount;
 
         let retry = 0;
         let abortDueToFunds = false;
