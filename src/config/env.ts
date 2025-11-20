@@ -2,30 +2,118 @@ import * as dotenv from 'dotenv';
 import { CopyStrategy, CopyStrategyConfig } from './copyStrategy';
 dotenv.config();
 
-if (!process.env.USER_ADDRESSES) {
-    throw new Error('USER_ADDRESSES is not defined');
-}
-if (!process.env.PROXY_WALLET) {
-    throw new Error('PROXY_WALLET is not defined');
-}
-if (!process.env.PRIVATE_KEY) {
-    throw new Error('PRIVATE_KEY is not defined');
-}
-if (!process.env.CLOB_HTTP_URL) {
-    throw new Error('CLOB_HTTP_URL is not defined');
-}
-if (!process.env.CLOB_WS_URL) {
-    throw new Error('CLOB_WS_URL is not defined');
-}
-if (!process.env.MONGO_URI) {
-    throw new Error('MONGO_URI is not defined');
-}
-if (!process.env.RPC_URL) {
-    throw new Error('RPC_URL is not defined');
-}
-if (!process.env.USDC_CONTRACT_ADDRESS) {
-    throw new Error('USDC_CONTRACT_ADDRESS is not defined');
-}
+/**
+ * Validate Ethereum address format
+ */
+const isValidEthereumAddress = (address: string): boolean => {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+};
+
+/**
+ * Validate required environment variables
+ */
+const validateRequiredEnv = (): void => {
+    const required = [
+        'USER_ADDRESSES',
+        'PROXY_WALLET',
+        'PRIVATE_KEY',
+        'CLOB_HTTP_URL',
+        'CLOB_WS_URL',
+        'MONGO_URI',
+        'RPC_URL',
+        'USDC_CONTRACT_ADDRESS',
+    ];
+
+    const missing: string[] = [];
+    for (const key of required) {
+        if (!process.env[key]) {
+            missing.push(key);
+        }
+    }
+
+    if (missing.length > 0) {
+        throw new Error(
+            `Missing required environment variables: ${missing.join(', ')}\n` +
+                `Please check your .env file. See .env.example for reference.`
+        );
+    }
+};
+
+/**
+ * Validate Ethereum addresses
+ */
+const validateAddresses = (): void => {
+    if (process.env.PROXY_WALLET && !isValidEthereumAddress(process.env.PROXY_WALLET)) {
+        throw new Error(
+            `Invalid PROXY_WALLET address format: ${process.env.PROXY_WALLET}\n` +
+                `Expected format: 0x followed by 40 hexadecimal characters`
+        );
+    }
+
+    if (process.env.USDC_CONTRACT_ADDRESS && !isValidEthereumAddress(process.env.USDC_CONTRACT_ADDRESS)) {
+        throw new Error(
+            `Invalid USDC_CONTRACT_ADDRESS format: ${process.env.USDC_CONTRACT_ADDRESS}\n` +
+                `Expected format: 0x followed by 40 hexadecimal characters`
+        );
+    }
+};
+
+/**
+ * Validate numeric configuration values
+ */
+const validateNumericConfig = (): void => {
+    const fetchInterval = parseInt(process.env.FETCH_INTERVAL || '1', 10);
+    if (isNaN(fetchInterval) || fetchInterval <= 0) {
+        throw new Error(`Invalid FETCH_INTERVAL: ${process.env.FETCH_INTERVAL}. Must be a positive integer.`);
+    }
+
+    const retryLimit = parseInt(process.env.RETRY_LIMIT || '3', 10);
+    if (isNaN(retryLimit) || retryLimit < 1 || retryLimit > 10) {
+        throw new Error(`Invalid RETRY_LIMIT: ${process.env.RETRY_LIMIT}. Must be between 1 and 10.`);
+    }
+
+    const tooOldTimestamp = parseInt(process.env.TOO_OLD_TIMESTAMP || '24', 10);
+    if (isNaN(tooOldTimestamp) || tooOldTimestamp < 1) {
+        throw new Error(`Invalid TOO_OLD_TIMESTAMP: ${process.env.TOO_OLD_TIMESTAMP}. Must be a positive integer (hours).`);
+    }
+
+    const requestTimeout = parseInt(process.env.REQUEST_TIMEOUT_MS || '10000', 10);
+    if (isNaN(requestTimeout) || requestTimeout < 1000) {
+        throw new Error(`Invalid REQUEST_TIMEOUT_MS: ${process.env.REQUEST_TIMEOUT_MS}. Must be at least 1000ms.`);
+    }
+
+    const networkRetryLimit = parseInt(process.env.NETWORK_RETRY_LIMIT || '3', 10);
+    if (isNaN(networkRetryLimit) || networkRetryLimit < 1 || networkRetryLimit > 10) {
+        throw new Error(`Invalid NETWORK_RETRY_LIMIT: ${process.env.NETWORK_RETRY_LIMIT}. Must be between 1 and 10.`);
+    }
+};
+
+/**
+ * Validate URL formats
+ */
+const validateUrls = (): void => {
+    if (process.env.CLOB_HTTP_URL && !process.env.CLOB_HTTP_URL.startsWith('http')) {
+        throw new Error(`Invalid CLOB_HTTP_URL: ${process.env.CLOB_HTTP_URL}. Must be a valid HTTP/HTTPS URL.`);
+    }
+
+    if (process.env.CLOB_WS_URL && !process.env.CLOB_WS_URL.startsWith('ws')) {
+        throw new Error(`Invalid CLOB_WS_URL: ${process.env.CLOB_WS_URL}. Must be a valid WebSocket URL (ws:// or wss://).`);
+    }
+
+    if (process.env.RPC_URL && !process.env.RPC_URL.startsWith('http')) {
+        throw new Error(`Invalid RPC_URL: ${process.env.RPC_URL}. Must be a valid HTTP/HTTPS URL.`);
+    }
+
+    if (process.env.MONGO_URI && !process.env.MONGO_URI.startsWith('mongodb')) {
+        throw new Error(`Invalid MONGO_URI: ${process.env.MONGO_URI}. Must be a valid MongoDB connection string.`);
+    }
+};
+
+// Run all validations
+validateRequiredEnv();
+validateAddresses();
+validateNumericConfig();
+validateUrls();
 
 // Parse USER_ADDRESSES: supports both comma-separated string and JSON array
 const parseUserAddresses = (input: string): string[] => {
@@ -35,14 +123,31 @@ const parseUserAddresses = (input: string): string[] => {
         try {
             const parsed = JSON.parse(trimmed);
             if (Array.isArray(parsed)) {
-                return parsed.map((addr) => addr.toLowerCase().trim());
+                const addresses = parsed.map((addr) => addr.toLowerCase().trim()).filter((addr) => addr.length > 0);
+                // Validate each address
+                for (const addr of addresses) {
+                    if (!isValidEthereumAddress(addr)) {
+                        throw new Error(`Invalid Ethereum address in USER_ADDRESSES: ${addr}`);
+                    }
+                }
+                return addresses;
             }
         } catch (e) {
-            throw new Error('Invalid JSON format for USER_ADDRESSES');
+            if (e instanceof Error && e.message.includes('Invalid Ethereum address')) {
+                throw e;
+            }
+            throw new Error(`Invalid JSON format for USER_ADDRESSES: ${e instanceof Error ? e.message : String(e)}`);
         }
     }
     // Otherwise treat as comma-separated
-    return trimmed.split(',').map((addr) => addr.toLowerCase().trim()).filter((addr) => addr.length > 0);
+    const addresses = trimmed.split(',').map((addr) => addr.toLowerCase().trim()).filter((addr) => addr.length > 0);
+    // Validate each address
+    for (const addr of addresses) {
+        if (!isValidEthereumAddress(addr)) {
+            throw new Error(`Invalid Ethereum address in USER_ADDRESSES: ${addr}`);
+        }
+    }
+    return addresses;
 };
 
 // Parse copy strategy configuration
