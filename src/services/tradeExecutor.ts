@@ -265,14 +265,25 @@ const doAggregatedTrading = async (clobClient: ClobClient, aggregatedTrades: Agg
     }
 };
 
-const tradeExcutor = async (clobClient: ClobClient) => {
+// Track if executor should continue running
+let isRunning = true;
+
+/**
+ * Stop the trade executor gracefully
+ */
+export const stopTradeExecutor = () => {
+    isRunning = false;
+    Logger.info('Trade executor shutdown requested...');
+};
+
+const tradeExecutor = async (clobClient: ClobClient) => {
     Logger.success(`Trade executor ready for ${USER_ADDRESSES.length} trader(s)`);
     if (TRADE_AGGREGATION_ENABLED) {
         Logger.info(`Trade aggregation enabled: ${TRADE_AGGREGATION_WINDOW_SECONDS}s window, $${TRADE_AGGREGATION_MIN_TOTAL_USD} minimum`);
     }
 
     let lastCheck = Date.now();
-    while (true) {
+    while (isRunning) {
         const trades = await readTempTrades();
 
         if (TRADE_AGGREGATION_ENABLED) {
@@ -334,8 +345,11 @@ const tradeExcutor = async (clobClient: ClobClient) => {
             }
         }
 
+        if (!isRunning) break;
         await new Promise((resolve) => setTimeout(resolve, 300));
     }
+    
+    Logger.info('Trade executor stopped');
 };
 
-export default tradeExcutor;
+export default tradeExecutor;

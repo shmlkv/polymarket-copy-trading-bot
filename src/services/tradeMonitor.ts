@@ -203,6 +203,16 @@ const fetchTradeData = async () => {
 
 // Track if this is the first run
 let isFirstRun = true;
+// Track if monitor should continue running
+let isRunning = true;
+
+/**
+ * Stop the trade monitor gracefully
+ */
+export const stopTradeMonitor = () => {
+    isRunning = false;
+    Logger.info('Trade monitor shutdown requested...');
+};
 
 const tradeMonitor = async () => {
     await init();
@@ -226,10 +236,13 @@ const tradeMonitor = async () => {
         Logger.separator();
     }
 
-    while (true) {
+    while (isRunning) {
         await fetchTradeData();
+        if (!isRunning) break;
         await new Promise((resolve) => setTimeout(resolve, FETCH_INTERVAL * 1000));
     }
+    
+    Logger.info('Trade monitor stopped');
 };
 
 export default tradeMonitor;
