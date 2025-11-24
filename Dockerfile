@@ -1,41 +1,56 @@
-# ==============================================================================
-# POLYMARKET COPY TRADING BOT - DOCKER BUILD
-# ==============================================================================
-# Multi-stage build for optimized production image
+# Multi-stage build for Polymarket Copy Trading Bot
 
-# --- Build Stage ---
-FROM node:18 AS build
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
 WORKDIR /app
 
-# Copy package manifests
+# Copy package files
 COPY package*.json ./
+COPY tsconfig.json ./
 
 # Install dependencies
-# Use npm ci if package-lock.json exists, otherwise npm install
-RUN npm ci || npm install
-
-# Install TypeScript and fix chalk compatibility
-# Note: chalk@5+ is ESM-only, so we use chalk@4 for CommonJS compatibility
-RUN npm install --save-dev typescript && \
-    npm uninstall chalk || true && \
-    npm install chalk@4 --save
+RUN npm ci
 
 # Copy source code
-COPY . .
+COPY src ./src
 
-# Build TypeScript to JavaScript
+# Build TypeScript
 RUN npm run build
 
-# --- Runtime Stage ---
-FROM node:18
+# Stage 2: Production
+FROM node:20-alpine
+
 WORKDIR /app
 
-# Copy built application from build stage
-COPY --from=build /app /app
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
 
-# Set production environment
-ENV NODE_ENV=production
+# Copy package files
+COPY package*.json ./
 
-# Run allowance check before starting the bot
-# This ensures USDC approval is set for Polymarket trading
-CMD bash -c "npm run check-allowance && npm start"
+# Install production dependencies only
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Change ownership
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port (if needed for health checks in future)
+EXPOSE 3000
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "dist/index.js"]
+
