@@ -1,0 +1,105 @@
+version: "3.8"
+
+networks:
+  polymarket-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: polymarket-mongodb
+    networks:
+      polymarket-network:
+        ipv4_address: 172.25.0.10
+    environment:
+      # MongoDB credentials - configure these in .env.docker
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-polymarket_user}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-change_this_password}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-polymarket_db}
+    volumes:
+      # Local directories for MongoDB data persistence
+      - ./mongodb_data:/data/db
+      - ./mongodb_config:/data/configdb
+    restart: always
+    # MongoDB not exposed externally - only accessible within Docker network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # WIREGUARD VPN (OPTIONAL)
+  # ============================================================================
+  # This service is OPTIONAL and only needed if:
+  # - You need to bypass geographic restrictions
+  # - You want to hide your trading activity from your ISP
+  # - You're using a VPN provider that supports WireGuard
+  #
+  # To disable VPN:
+  # 1. Comment out this entire wireguard-vpn service
+  # 2. In the polymarket service below, change:
+  #    network_mode: "service:wireguard-vpn"  →  networks: [polymarket-network]
+  # 3. Remove the wireguard-vpn dependency
+  # ============================================================================
+  wireguard-vpn:
+    image: qmcgaw/gluetun
+    container_name: wireguard-vpn
+    networks:
+      - polymarket-network
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    volumes:
+      - ./vpn:/gluetun
+    environment:
+      # VPN Provider Configuration - configure these in .env.docker
+      VPN_SERVICE_PROVIDER: ${VPN_PROVIDER:-airvpn}
+      VPN_TYPE: wireguard
+      WIREGUARD_PRIVATE_KEY: ${WIREGUARD_PRIVATE_KEY}
+      WIREGUARD_PRESHARED_KEY: ${WIREGUARD_PRESHARED_KEY:-}
+      WIREGUARD_ADDRESSES: ${WIREGUARD_ADDRESSES}
+      SERVER_COUNTRIES: ${VPN_COUNTRIES:-Austria, Belgium, Germany, United Kingdom}
+    restart: always
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ping -c 1 -W 2 1.1.1.1 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  polymarket:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: polymarket
+    # Routes traffic through VPN container - comment out if not using VPN
+    network_mode: "service:wireguard-vpn"
+    # If NOT using VPN, uncomment the line below and comment out network_mode above
+    # networks:
+    #   - polymarket-network
+    depends_on:
+      # Comment out wireguard-vpn dependency if not using VPN
+      wireguard-vpn:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: always
+    working_dir: /app
+    env_file:
+      # Bot configuration from .env file
+      - ./.env
+    environment:
+      # User/Group IDs for file permissions (optional)
+      # Set these to match your host user to avoid permission issues:
+      # Run `id -u` and `id -g` on your host to get your UID and GID
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+
+      # Override MONGO_URI to use Docker network
+      # This connects to the MongoDB container via Docker's internal network
+      MONGO_URI: "mongodb://${MONGO_USER:-polymarket_user}:${MONGO_PASSWORD:-change_this_password}@172.25.0.10:27017/${MONGO_DATABASE:-polymarket_db}?authSource=admin"
