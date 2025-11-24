@@ -45,7 +45,8 @@ The bot ensures you maintain proportional exposure relative to the traders you f
 
 - **Multi-Trader Support** - Track and copy trades from multiple traders simultaneously
 - **Smart Position Sizing** - Automatically adjusts trade sizes based on your capital
-- **Position Tracking** - Accurately tracks purchases and sells proportionally even after balance changes (NEW!)
+- **Tiered Trade Multipliers** - Apply different multipliers based on trade size - perfect for copying large traders (NEW!)
+- **Position Tracking** - Accurately tracks purchases and sells proportionally even after balance changes
 - **Trade Aggregation** - Combine multiple small trades into larger executable orders
 - **Real-time Execution** - Monitors trades every second and executes instantly
 - **Beautiful Logging** - Clean, colorful console output with structured trade information

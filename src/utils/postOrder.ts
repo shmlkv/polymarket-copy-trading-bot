@@ -3,7 +3,7 @@ import { ENV } from '../config/env';
 import { UserActivityInterface, UserPositionInterface } from '../interfaces/User';
 import { getUserActivityModel } from '../models/userHistory';
 import Logger from './logger';
-import { calculateOrderSize } from '../config/copyStrategy';
+import { calculateOrderSize, getTradeMultiplier } from '../config/copyStrategy';
 
 const RETRY_LIMIT = ENV.RETRY_LIMIT;
 const COPY_STRATEGY_CONFIG = ENV.COPY_STRATEGY_CONFIG;
@@ -362,12 +362,13 @@ const postOrder = async (
                 );
             }
 
-            // Apply multiplier symmetrically with BUY logic
-            remaining = baseSellSize * TRADE_MULTIPLIER;
+            // Apply tiered or single multiplier based on trader's order size (symmetrical with BUY logic)
+            const multiplier = getTradeMultiplier(COPY_STRATEGY_CONFIG, trade.usdcSize);
+            remaining = baseSellSize * multiplier;
 
-            if (TRADE_MULTIPLIER !== 1.0) {
+            if (multiplier !== 1.0) {
                 Logger.info(
-                    `Applying ${TRADE_MULTIPLIER}x multiplier: ${baseSellSize.toFixed(2)} → ${remaining.toFixed(2)} tokens`
+                    `Applying ${multiplier}x multiplier (based on trader's $${trade.usdcSize.toFixed(2)} order): ${baseSellSize.toFixed(2)} → ${remaining.toFixed(2)} tokens`
                 );
             }
         }

@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { CopyStrategy, CopyStrategyConfig } from './copyStrategy';
+import { CopyStrategy, CopyStrategyConfig, parseTieredMultipliers } from './copyStrategy';
 dotenv.config();
 
 /**
@@ -189,7 +189,7 @@ const parseCopyStrategy = (): CopyStrategyConfig => {
         const tradeMultiplier = parseFloat(process.env.TRADE_MULTIPLIER || '1.0');
         const effectivePercentage = copyPercentage * tradeMultiplier;
 
-        return {
+        const config: CopyStrategyConfig = {
             strategy: CopyStrategy.PERCENTAGE,
             copySize: effectivePercentage,
             maxOrderSizeUSD: parseFloat(process.env.MAX_ORDER_SIZE_USD || '100.0'),
@@ -201,6 +201,21 @@ const parseCopyStrategy = (): CopyStrategyConfig => {
                 ? parseFloat(process.env.MAX_DAILY_VOLUME_USD)
                 : undefined,
         };
+
+        // Parse tiered multipliers if configured (even for legacy mode)
+        if (process.env.TIERED_MULTIPLIERS) {
+            try {
+                config.tieredMultipliers = parseTieredMultipliers(process.env.TIERED_MULTIPLIERS);
+                console.log(`✓ Loaded ${config.tieredMultipliers.length} tiered multipliers`);
+            } catch (error) {
+                throw new Error(`Failed to parse TIERED_MULTIPLIERS: ${error instanceof Error ? error.message : String(error)}`);
+            }
+        } else if (tradeMultiplier !== 1.0) {
+            // If using legacy single multiplier, store it
+            config.tradeMultiplier = tradeMultiplier;
+        }
+
+        return config;
     }
 
     // Parse new copy strategy configuration
@@ -230,6 +245,23 @@ const parseCopyStrategy = (): CopyStrategyConfig => {
             process.env.ADAPTIVE_MAX_PERCENT || config.copySize.toString()
         );
         config.adaptiveThreshold = parseFloat(process.env.ADAPTIVE_THRESHOLD_USD || '500.0');
+    }
+
+    // Parse tiered multipliers if configured
+    if (process.env.TIERED_MULTIPLIERS) {
+        try {
+            config.tieredMultipliers = parseTieredMultipliers(process.env.TIERED_MULTIPLIERS);
+            console.log(`✓ Loaded ${config.tieredMultipliers.length} tiered multipliers`);
+        } catch (error) {
+            throw new Error(`Failed to parse TIERED_MULTIPLIERS: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    } else if (process.env.TRADE_MULTIPLIER) {
+        // Fall back to single multiplier if no tiers configured
+        const singleMultiplier = parseFloat(process.env.TRADE_MULTIPLIER);
+        if (singleMultiplier !== 1.0) {
+            config.tradeMultiplier = singleMultiplier;
+            console.log(`✓ Using single trade multiplier: ${singleMultiplier}x`);
+        }
     }
 
     return config;
