@@ -1,18 +1,20 @@
 import axios, { AxiosError } from 'axios';
 import { ENV } from '../config/env';
 
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isNetworkError = (error: unknown): boolean => {
     if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
         const code = axiosError.code;
         // Network timeout/connection errors
-        return code === 'ETIMEDOUT' ||
-               code === 'ENETUNREACH' ||
-               code === 'ECONNRESET' ||
-               code === 'ECONNREFUSED' ||
-               !axiosError.response; // No response = network issue
+        return (
+            code === 'ETIMEDOUT' ||
+            code === 'ENETUNREACH' ||
+            code === 'ECONNRESET' ||
+            code === 'ECONNREFUSED' ||
+            !axiosError.response
+        ); // No response = network issue
     }
     return false;
 };
@@ -38,15 +40,19 @@ const fetchData = async (url: string) => {
 
             if (isNetworkError(error) && !isLastAttempt) {
                 const delay = retryDelay * Math.pow(2, attempt - 1); // Exponential backoff: 1s, 2s, 4s
-                console.warn(`⚠️  Network error (attempt ${attempt}/${retries}), retrying in ${delay / 1000}s...`);
+                console.warn(
+                    `⚠️  Network error (attempt ${attempt}/${retries}), retrying in ${delay / 1000}s...`
+                );
                 await sleep(delay);
                 continue;
             }
 
             // If it's the last attempt or not a network error, throw
             if (isLastAttempt && isNetworkError(error)) {
-                console.error(`❌ Network timeout after ${retries} attempts -`,
-                    axios.isAxiosError(error) ? error.code : 'Unknown error');
+                console.error(
+                    `❌ Network timeout after ${retries} attempts -`,
+                    axios.isAxiosError(error) ? error.code : 'Unknown error'
+                );
             }
             throw error;
         }

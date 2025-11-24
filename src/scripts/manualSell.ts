@@ -24,7 +24,10 @@ interface Position {
     outcome: string;
 }
 
-const isGnosisSafe = async (address: string, provider: ethers.providers.JsonRpcProvider): Promise<boolean> => {
+const isGnosisSafe = async (
+    address: string,
+    provider: ethers.providers.JsonRpcProvider
+): Promise<boolean> => {
     try {
         const code = await provider.getCode(address);
         return code !== '0x';
@@ -34,7 +37,9 @@ const isGnosisSafe = async (address: string, provider: ethers.providers.JsonRpcP
     }
 };
 
-const createClobClient = async (provider: ethers.providers.JsonRpcProvider): Promise<ClobClient> => {
+const createClobClient = async (
+    provider: ethers.providers.JsonRpcProvider
+): Promise<ClobClient> => {
     const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
     const isProxySafe = await isGnosisSafe(PROXY_WALLET, provider);
     const signatureType = isProxySafe ? SignatureType.POLY_GNOSIS_SAFE : SignatureType.EOA;
@@ -85,9 +90,7 @@ const fetchPositions = async (): Promise<Position[]> => {
 };
 
 const findMatchingPosition = (positions: Position[], searchQuery: string): Position | undefined => {
-    return positions.find((pos) =>
-        pos.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return positions.find((pos) => pos.title.toLowerCase().includes(searchQuery.toLowerCase()));
 };
 
 const updatePolymarketCache = async (clobClient: ClobClient, tokenId: string) => {
@@ -105,15 +108,13 @@ const updatePolymarketCache = async (clobClient: ClobClient, tokenId: string) =>
     }
 };
 
-const sellPosition = async (
-    clobClient: ClobClient,
-    position: Position,
-    sellSize: number
-) => {
+const sellPosition = async (clobClient: ClobClient, position: Position, sellSize: number) => {
     let remaining = sellSize;
     let retry = 0;
 
-    console.log(`\n🔄 Starting to sell ${sellSize.toFixed(2)} tokens (${(SELL_PERCENTAGE * 100).toFixed(0)}% of position)`);
+    console.log(
+        `\n🔄 Starting to sell ${sellSize.toFixed(2)} tokens (${(SELL_PERCENTAGE * 100).toFixed(0)}% of position)`
+    );
     console.log(`Token ID: ${position.asset}`);
     console.log(`Market: ${position.title} - ${position.outcome}\n`);
 
@@ -161,7 +162,9 @@ const sellPosition = async (
             if (resp.success === true) {
                 retry = 0;
                 const soldValue = (orderAmount * orderArgs.price).toFixed(2);
-                console.log(`✅ SUCCESS: Sold ${orderAmount.toFixed(2)} tokens at $${orderArgs.price} (Total: $${soldValue})`);
+                console.log(
+                    `✅ SUCCESS: Sold ${orderAmount.toFixed(2)} tokens at $${orderArgs.price} (Total: $${soldValue})`
+                );
                 remaining -= orderAmount;
 
                 if (remaining > 0) {
@@ -170,11 +173,13 @@ const sellPosition = async (
             } else {
                 retry += 1;
                 const errorMsg = extractOrderError(resp);
-                console.log(`⚠️  Order failed (attempt ${retry}/${RETRY_LIMIT})${errorMsg ? `: ${errorMsg}` : ''}`);
+                console.log(
+                    `⚠️  Order failed (attempt ${retry}/${RETRY_LIMIT})${errorMsg ? `: ${errorMsg}` : ''}`
+                );
 
                 if (retry < RETRY_LIMIT) {
                     console.log('🔄 Retrying...\n');
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise((resolve) => setTimeout(resolve, 1000));
                 }
             }
         } catch (error) {
@@ -183,7 +188,7 @@ const sellPosition = async (
 
             if (retry < RETRY_LIMIT) {
                 console.log('🔄 Retrying...\n');
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                await new Promise((resolve) => setTimeout(resolve, 1000));
             }
         }
     }
@@ -260,7 +265,9 @@ async function main() {
             console.log(`❌ Position "${MARKET_SEARCH_QUERY}" not found!`);
             console.log('\nAvailable positions:');
             positions.forEach((pos, idx) => {
-                console.log(`${idx + 1}. ${pos.title} - ${pos.outcome} (${pos.size.toFixed(2)} tokens)`);
+                console.log(
+                    `${idx + 1}. ${pos.title} - ${pos.outcome} (${pos.size.toFixed(2)} tokens)`
+                );
             });
             process.exit(1);
         }
@@ -276,7 +283,9 @@ async function main() {
         const sellSize = position.size * SELL_PERCENTAGE;
 
         if (sellSize < 1.0) {
-            console.log(`\n❌ Sell size (${sellSize.toFixed(2)} tokens) is below minimum (1.0 token)`);
+            console.log(
+                `\n❌ Sell size (${sellSize.toFixed(2)} tokens) is below minimum (1.0 token)`
+            );
             console.log('Please increase your position or adjust SELL_PERCENTAGE');
             process.exit(1);
         }

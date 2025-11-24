@@ -37,10 +37,16 @@ export const performHealthCheck = async (): Promise<HealthCheckResult> => {
                 checks.database = { status: 'error', message: 'Database object not available' };
             }
         } else {
-            checks.database = { status: 'error', message: `Connection state: ${mongoose.connection.readyState}` };
+            checks.database = {
+                status: 'error',
+                message: `Connection state: ${mongoose.connection.readyState}`,
+            };
         }
     } catch (error) {
-        checks.database = { status: 'error', message: `Connection failed: ${error instanceof Error ? error.message : String(error)}` };
+        checks.database = {
+            status: 'error',
+            message: `Connection failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
     }
 
     // Check RPC endpoint
@@ -68,7 +74,10 @@ export const performHealthCheck = async (): Promise<HealthCheckResult> => {
             checks.rpc = { status: 'error', message: `HTTP ${response.status}` };
         }
     } catch (error) {
-        checks.rpc = { status: 'error', message: `RPC check failed: ${error instanceof Error ? error.message : String(error)}` };
+        checks.rpc = {
+            status: 'error',
+            message: `RPC check failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
     }
 
     // Check USDC balance
@@ -76,24 +85,39 @@ export const performHealthCheck = async (): Promise<HealthCheckResult> => {
         const balance = await getMyBalance(ENV.PROXY_WALLET);
         if (balance > 0) {
             if (balance < 10) {
-                checks.balance = { status: 'warning', message: `Low balance: $${balance.toFixed(2)}`, balance };
+                checks.balance = {
+                    status: 'warning',
+                    message: `Low balance: $${balance.toFixed(2)}`,
+                    balance,
+                };
             } else {
-                checks.balance = { status: 'ok', message: `Balance: $${balance.toFixed(2)}`, balance };
+                checks.balance = {
+                    status: 'ok',
+                    message: `Balance: $${balance.toFixed(2)}`,
+                    balance,
+                };
             }
         } else {
             checks.balance = { status: 'error', message: 'Zero balance' };
         }
     } catch (error) {
-        checks.balance = { status: 'error', message: `Balance check failed: ${error instanceof Error ? error.message : String(error)}` };
+        checks.balance = {
+            status: 'error',
+            message: `Balance check failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
     }
 
     // Check Polymarket API
     try {
-        const testUrl = 'https://data-api.polymarket.com/positions?user=0x0000000000000000000000000000000000000000';
+        const testUrl =
+            'https://data-api.polymarket.com/positions?user=0x0000000000000000000000000000000000000000';
         await fetchData(testUrl);
         checks.polymarketApi = { status: 'ok', message: 'API responding' };
     } catch (error) {
-        checks.polymarketApi = { status: 'error', message: `API check failed: ${error instanceof Error ? error.message : String(error)}` };
+        checks.polymarketApi = {
+            status: 'error',
+            message: `API check failed: ${error instanceof Error ? error.message : String(error)}`,
+        };
     }
 
     // Determine overall health
@@ -117,12 +141,17 @@ export const logHealthCheck = (result: HealthCheckResult): void => {
     Logger.separator();
     Logger.header('🏥 HEALTH CHECK');
     Logger.info(`Overall Status: ${result.healthy ? '✅ Healthy' : '❌ Unhealthy'}`);
-    Logger.info(`Database: ${result.checks.database.status === 'ok' ? '✅' : '❌'} ${result.checks.database.message}`);
-    Logger.info(`RPC: ${result.checks.rpc.status === 'ok' ? '✅' : '❌'} ${result.checks.rpc.message}`);
+    Logger.info(
+        `Database: ${result.checks.database.status === 'ok' ? '✅' : '❌'} ${result.checks.database.message}`
+    );
+    Logger.info(
+        `RPC: ${result.checks.rpc.status === 'ok' ? '✅' : '❌'} ${result.checks.rpc.message}`
+    );
     Logger.info(
         `Balance: ${result.checks.balance.status === 'ok' ? '✅' : result.checks.balance.status === 'warning' ? '⚠️' : '❌'} ${result.checks.balance.message}`
     );
-    Logger.info(`Polymarket API: ${result.checks.polymarketApi.status === 'ok' ? '✅' : '❌'} ${result.checks.polymarketApi.message}`);
+    Logger.info(
+        `Polymarket API: ${result.checks.polymarketApi.status === 'ok' ? '✅' : '❌'} ${result.checks.polymarketApi.message}`
+    );
     Logger.separator();
 };
-

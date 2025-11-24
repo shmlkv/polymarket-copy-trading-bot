@@ -1,21 +1,25 @@
 # 📊 Multi-Trader Configuration Guide
 
 ## Overview
+
 The bot now supports tracking multiple traders simultaneously. This allows you to diversify your copy trading strategy by following several successful traders at once.
 
 ## Configuration Options
 
 ### Option 1: Single Trader
+
 ```bash
 USER_ADDRESSES = '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b'
 ```
 
 ### Option 2: Multiple Traders (Comma-Separated)
+
 ```bash
 USER_ADDRESSES = '0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b, 0xAnotherTrader123..., 0xYetAnotherTrader456...'
 ```
 
 ### Option 3: Multiple Traders (JSON Array)
+
 ```bash
 USER_ADDRESSES = '["0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b", "0xAnotherTrader123...", "0xYetAnotherTrader456..."]'
 ```
@@ -23,13 +27,17 @@ USER_ADDRESSES = '["0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b", "0xAnotherTrade
 ## How It Works
 
 ### 1. **Independent Monitoring**
+
 Each trader is monitored separately. The bot creates separate database collections for each trader's activity.
 
 ### 2. **Unified Execution**
+
 All trades from all traders are executed through your single wallet (`PROXY_WALLET`).
 
 ### 3. **Proportional Position Sizing**
+
 For each trader, the bot calculates position sizes proportionally:
+
 ```
 Your position = (Your balance / Trader's balance) × Trader's position
 ```
@@ -52,6 +60,7 @@ PRIVATE_KEY = 'your_private_key_without_0x'
 ## Bot Output Example
 
 When starting the bot:
+
 ```
 🤖 Polymarket Copy Trading Bot Starting...
 
@@ -66,6 +75,7 @@ When starting the bot:
 ```
 
 When a trade is detected:
+
 ```
 💥 Found 2 new transaction(s) to copy 💥
 
@@ -81,18 +91,23 @@ My balance: $1000 | 0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b balance: $15000
 ## Finding Traders to Copy
 
 ### 1. Polymarket Leaderboard
+
 Visit: https://polymarket.com/leaderboard
+
 - Look for traders with consistent profits
 - Check their trade history
 - Note their wallet address
 
 ### 2. Profile Pages
+
 Visit: https://polymarket.com/profile/[ADDRESS]
+
 - View detailed trade history
 - Check win rate
 - Analyze position sizes
 
 ### 3. Key Metrics to Consider
+
 - ✅ Total P&L (positive)
 - ✅ Win rate (>55%)
 - ✅ Number of trades (>100 for consistency)
@@ -102,22 +117,28 @@ Visit: https://polymarket.com/profile/[ADDRESS]
 ## Risk Management Tips
 
 ### 1. **Diversify Across Traders**
+
 Don't put all your faith in one trader. Track 3-5 different traders with different strategies.
 
 ### 2. **Start Small**
+
 Begin with a small balance in `PROXY_WALLET` to test the bot's behavior.
 
 ### 3. **Monitor Regularly**
+
 Check the bot's logs daily to ensure it's copying trades correctly.
 
 ### 4. **Set Aside Capital**
+
 Ensure `PROXY_WALLET` has:
+
 - Sufficient USDC for trading
 - Some MATIC for gas fees (~$5-10 worth)
 
 ## Database Structure
 
 Each trader gets their own collections:
+
 ```
 MongoDB Collections:
 - user_activities_0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b
@@ -130,19 +151,25 @@ MongoDB Collections:
 ## Troubleshooting
 
 ### Issue: Bot not detecting trades
+
 **Solution**:
+
 1. Verify trader addresses are correct
 2. Check that traders are actively trading
 3. Ensure MongoDB connection is working
 
 ### Issue: Trades failing
+
 **Solution**:
+
 1. Check `PROXY_WALLET` has sufficient USDC balance
 2. Ensure you have MATIC for gas fees
 3. Review price slippage settings (currently 0.05)
 
 ### Issue: Too many traders slowing down bot
+
 **Solution**:
+
 - Limit to 5-7 traders maximum
 - Increase `FETCH_INTERVAL` to 2-3 seconds
 
@@ -157,5 +184,6 @@ MongoDB Collections:
 ## Support
 
 For questions or issues:
+
 - GitHub Issues: [Create an issue](https://github.com/your-repo/issues)
 - Telegram: https://t.me/trust4120

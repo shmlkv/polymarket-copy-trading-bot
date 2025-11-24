@@ -54,7 +54,11 @@ interface CachedTrades {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const fetchBatch = async (address: string, offset: number, limit: number): Promise<TradeApiResponse[]> => {
+const fetchBatch = async (
+    address: string,
+    offset: number,
+    limit: number
+): Promise<TradeApiResponse[]> => {
     const response = await axios.get(
         `https://data-api.polymarket.com/activity?user=${address}&type=TRADE&limit=${limit}&offset=${offset}`,
         {
@@ -143,7 +147,9 @@ const main = async () => {
 
     console.log('📥 Старт выгрузки истории сделок');
     console.log(`Трейдеров: ${USER_ADDRESSES.length}`);
-    console.log(`Период: ${HISTORY_DAYS} дней, максимум ${MAX_TRADES_PER_TRADER} сделок на трейдера`);
+    console.log(
+        `Период: ${HISTORY_DAYS} дней, максимум ${MAX_TRADES_PER_TRADER} сделок на трейдера`
+    );
 
     const addressChunks = chunk(USER_ADDRESSES, MAX_PARALLEL);
 

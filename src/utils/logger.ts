@@ -112,9 +112,13 @@ class Logger {
 
     static balance(myBalance: number, traderBalance: number, traderAddress: string) {
         console.log(chalk.gray('Capital (USDC + Positions):'));
-        console.log(chalk.gray(`  Your total capital:   ${chalk.green.bold(`$${myBalance.toFixed(2)}`)}`));
         console.log(
-            chalk.gray(`  Trader total capital: ${chalk.blue.bold(`$${traderBalance.toFixed(2)}`)} (${this.formatAddress(traderAddress)})`)
+            chalk.gray(`  Your total capital:   ${chalk.green.bold(`$${myBalance.toFixed(2)}`)}`)
+        );
+        console.log(
+            chalk.gray(
+                `  Trader total capital: ${chalk.blue.bold(`$${traderBalance.toFixed(2)}`)} (${this.formatAddress(traderAddress)})`
+            )
         );
     }
 
@@ -130,7 +134,11 @@ class Logger {
 
     static monitoring(traderCount: number) {
         const timestamp = new Date().toLocaleTimeString();
-        console.log(chalk.dim(`[${timestamp}]`), chalk.cyan('👁️  Monitoring'), chalk.yellow(`${traderCount} trader(s)`));
+        console.log(
+            chalk.dim(`[${timestamp}]`),
+            chalk.cyan('👁️  Monitoring'),
+            chalk.yellow(`${traderCount} trader(s)`)
+        );
     }
 
     static startup(traders: string[], myWallet: string) {
@@ -138,7 +146,7 @@ class Logger {
         // ASCII Art Logo with gradient colors
         console.log(chalk.cyan('  ____       _        ____                 '));
         console.log(chalk.cyan(' |  _ \\ ___ | |_   _ / ___|___  _ __  _   _ '));
-        console.log(chalk.cyan.bold(' | |_) / _ \\| | | | | |   / _ \\| \'_ \\| | | |'));
+        console.log(chalk.cyan.bold(" | |_) / _ \\| | | | | |   / _ \\| '_ \\| | | |"));
         console.log(chalk.magenta.bold(' |  __/ (_) | | |_| | |__| (_) | |_) | |_| |'));
         console.log(chalk.magenta(' |_|   \\___/|_|\\__, |\\____\\___/| .__/ \\__, |'));
         console.log(chalk.magenta('               |___/            |_|    |___/ '));
@@ -178,18 +186,22 @@ class Logger {
             ? `${spinner} Waiting for trades from ${traderCount} trader(s)... (${extraInfo})`
             : `${spinner} Waiting for trades from ${traderCount} trader(s)...`;
 
-        process.stdout.write(
-            chalk.dim(`\r[${timestamp}] `) +
-                chalk.cyan(message) +
-                '  '
-        );
+        process.stdout.write(chalk.dim(`\r[${timestamp}] `) + chalk.cyan(message) + '  ');
     }
 
     static clearLine() {
         process.stdout.write('\r' + ' '.repeat(100) + '\r');
     }
 
-    static myPositions(wallet: string, count: number, topPositions: any[], overallPnl: number, totalValue: number, initialValue: number, currentBalance: number) {
+    static myPositions(
+        wallet: string,
+        count: number,
+        topPositions: any[],
+        overallPnl: number,
+        totalValue: number,
+        initialValue: number,
+        currentBalance: number
+    ) {
         console.log('\n' + chalk.magenta.bold('💼 YOUR POSITIONS'));
         console.log(chalk.gray(`   Wallet: ${this.formatAddress(wallet)}`));
         console.log('');
@@ -226,20 +238,40 @@ class Logger {
                     const pnlSign = pos.percentPnl >= 0 ? '+' : '';
                     const avgPrice = pos.avgPrice || 0;
                     const curPrice = pos.curPrice || 0;
-                    console.log(chalk.gray(`      • ${pos.outcome} - ${pos.title.slice(0, 45)}${pos.title.length > 45 ? '...' : ''}`));
-                    console.log(chalk.gray(`        Value: ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | PnL: ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`));
-                    console.log(chalk.gray(`        Bought @ ${chalk.yellow(`${(avgPrice * 100).toFixed(1)}¢`)} | Current @ ${chalk.yellow(`${(curPrice * 100).toFixed(1)}¢`)}`));
+                    console.log(
+                        chalk.gray(
+                            `      • ${pos.outcome} - ${pos.title.slice(0, 45)}${pos.title.length > 45 ? '...' : ''}`
+                        )
+                    );
+                    console.log(
+                        chalk.gray(
+                            `        Value: ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | PnL: ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`
+                        )
+                    );
+                    console.log(
+                        chalk.gray(
+                            `        Bought @ ${chalk.yellow(`${(avgPrice * 100).toFixed(1)}¢`)} | Current @ ${chalk.yellow(`${(curPrice * 100).toFixed(1)}¢`)}`
+                        )
+                    );
                 });
             }
         }
         console.log('');
     }
 
-    static tradersPositions(traders: string[], positionCounts: number[], positionDetails?: any[][], profitabilities?: number[]) {
-        console.log('\n' + chalk.cyan('📈 TRADERS YOU\'RE COPYING'));
+    static tradersPositions(
+        traders: string[],
+        positionCounts: number[],
+        positionDetails?: any[][],
+        profitabilities?: number[]
+    ) {
+        console.log('\n' + chalk.cyan("📈 TRADERS YOU'RE COPYING"));
         traders.forEach((address, index) => {
             const count = positionCounts[index];
-            const countStr = count > 0 ? chalk.green(`${count} position${count > 1 ? 's' : ''}`) : chalk.gray('0 positions');
+            const countStr =
+                count > 0
+                    ? chalk.green(`${count} position${count > 1 ? 's' : ''}`)
+                    : chalk.gray('0 positions');
 
             // Add profitability if available
             let profitStr = '';
@@ -259,9 +291,21 @@ class Logger {
                     const pnlSign = pos.percentPnl >= 0 ? '+' : '';
                     const avgPrice = pos.avgPrice || 0;
                     const curPrice = pos.curPrice || 0;
-                    console.log(chalk.gray(`      • ${pos.outcome} - ${pos.title.slice(0, 40)}${pos.title.length > 40 ? '...' : ''}`));
-                    console.log(chalk.gray(`        Value: ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | PnL: ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`));
-                    console.log(chalk.gray(`        Bought @ ${chalk.yellow(`${(avgPrice * 100).toFixed(1)}¢`)} | Current @ ${chalk.yellow(`${(curPrice * 100).toFixed(1)}¢`)}`));
+                    console.log(
+                        chalk.gray(
+                            `      • ${pos.outcome} - ${pos.title.slice(0, 40)}${pos.title.length > 40 ? '...' : ''}`
+                        )
+                    );
+                    console.log(
+                        chalk.gray(
+                            `        Value: ${chalk.cyan(`$${pos.currentValue.toFixed(2)}`)} | PnL: ${pnlColor(`${pnlSign}${pos.percentPnl.toFixed(1)}%`)}`
+                        )
+                    );
+                    console.log(
+                        chalk.gray(
+                            `        Bought @ ${chalk.yellow(`${(avgPrice * 100).toFixed(1)}¢`)} | Current @ ${chalk.yellow(`${(curPrice * 100).toFixed(1)}¢`)}`
+                        )
+                    );
                 });
             }
         });

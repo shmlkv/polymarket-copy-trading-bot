@@ -152,8 +152,8 @@ function parseTraderAddresses(): string[] {
     // Try comma-separated format
     return envAddresses
         .split(',')
-        .map(addr => addr.toLowerCase().trim())
-        .filter(addr => addr.length > 0);
+        .map((addr) => addr.toLowerCase().trim())
+        .filter((addr) => addr.length > 0);
 }
 
 async function fetchBatch(
@@ -185,7 +185,7 @@ async function fetchBatch(
             outcome: item.outcome || 'Unknown',
         }));
 
-        return trades.filter(t => t.timestamp >= sinceTimestamp);
+        return trades.filter((t) => t.timestamp >= sinceTimestamp);
     } catch (error) {
         return [];
     }
@@ -207,7 +207,9 @@ async function fetchTraderActivity(traderAddress: string): Promise<Trade[]> {
             while (hasMore && allTrades.length < MAX_TRADES_LIMIT) {
                 const promises: Promise<Trade[]>[] = [];
                 for (let i = 0; i < maxParallel; i++) {
-                    promises.push(fetchBatch(traderAddress, offset + i * batchSize, batchSize, sinceTimestamp));
+                    promises.push(
+                        fetchBatch(traderAddress, offset + i * batchSize, batchSize, sinceTimestamp)
+                    );
                 }
 
                 const results = await Promise.all(promises);
@@ -262,10 +264,10 @@ async function fetchTraderPositions(traderAddress: string): Promise<Position[]> 
 }
 
 async function getTraderCapitalAtTime(timestamp: number, trades: Trade[]): Promise<number> {
-    const pastTrades = trades.filter(t => t.timestamp <= timestamp);
+    const pastTrades = trades.filter((t) => t.timestamp <= timestamp);
     let capital = 100000;
 
-    pastTrades.forEach(trade => {
+    pastTrades.forEach((trade) => {
         if (trade.side === 'BUY') {
             capital -= trade.usdcSize;
         } else {
@@ -276,7 +278,10 @@ async function getTraderCapitalAtTime(timestamp: number, trades: Trade[]): Promi
     return Math.max(capital, 50000);
 }
 
-async function simulateTrader(traderAddress: string, startingCapital: number): Promise<TraderAuditResult> {
+async function simulateTrader(
+    traderAddress: string,
+    startingCapital: number
+): Promise<TraderAuditResult> {
     const startTime = Date.now();
     const shortAddress = `${traderAddress.slice(0, 6)}...${traderAddress.slice(-4)}`;
 
@@ -409,12 +414,12 @@ async function simulateTrader(traderAddress: string, startingCapital: number): P
         for (const [key, simPos] of positions.entries()) {
             if (!simPos.closed) {
                 const assetId = key.split(':')[0];
-                const traderPos = traderPositions.find(tp => tp.asset === assetId);
+                const traderPos = traderPositions.find((tp) => tp.asset === assetId);
 
                 if (traderPos && traderPos.size > 0) {
                     const currentPrice = traderPos.currentValue / traderPos.size;
                     const totalShares = simPos.trades
-                        .filter(t => t.side === 'BUY')
+                        .filter((t) => t.side === 'BUY')
                         .reduce((sum, t) => sum + t.size, 0);
                     simPos.currentValue = totalShares * currentPrice;
                 }
@@ -423,10 +428,10 @@ async function simulateTrader(traderAddress: string, startingCapital: number): P
                 unrealizedPnl += simPos.pnl;
             } else {
                 const totalBought = simPos.trades
-                    .filter(t => t.side === 'BUY')
+                    .filter((t) => t.side === 'BUY')
                     .reduce((sum, t) => sum + t.usdcSize, 0);
                 const totalSold = simPos.trades
-                    .filter(t => t.side === 'SELL')
+                    .filter((t) => t.side === 'SELL')
                     .reduce((sum, t) => sum + t.usdcSize, 0);
                 simPos.pnl = totalSold - totalBought;
                 realizedPnl += simPos.pnl;
@@ -436,16 +441,19 @@ async function simulateTrader(traderAddress: string, startingCapital: number): P
         const currentCapital =
             yourCapital +
             Array.from(positions.values())
-                .filter(p => !p.closed)
+                .filter((p) => !p.closed)
                 .reduce((sum, p) => sum + p.currentValue, 0);
 
         const totalPnl = currentCapital - startingCapital;
         const roi = (totalPnl / startingCapital) * 100;
 
         // Calculate win rate
-        const closedPositions = Array.from(positions.values()).filter(p => p.closed);
-        const winningPositions = closedPositions.filter(p => p.pnl > 0);
-        const winRate = closedPositions.length > 0 ? (winningPositions.length / closedPositions.length) * 100 : 0;
+        const closedPositions = Array.from(positions.values()).filter((p) => p.closed);
+        const winningPositions = closedPositions.filter((p) => p.pnl > 0);
+        const winRate =
+            closedPositions.length > 0
+                ? (winningPositions.length / closedPositions.length) * 100
+                : 0;
 
         const avgTradeSize = copiedTrades > 0 ? totalInvested / copiedTrades : 0;
 
@@ -463,7 +471,7 @@ async function simulateTrader(traderAddress: string, startingCapital: number): P
             unrealizedPnl,
             winRate,
             avgTradeSize,
-            openPositions: Array.from(positions.values()).filter(p => !p.closed).length,
+            openPositions: Array.from(positions.values()).filter((p) => !p.closed).length,
             closedPositions: closedPositions.length,
             simulationTime: Date.now() - startTime,
             trades,
@@ -497,7 +505,7 @@ async function simulateTrader(traderAddress: string, startingCapital: number): P
 async function simulateCombinedBot(traderResults: TraderAuditResult[]): Promise<CombinedBotResult> {
     console.log(colors.cyan('\n🤖 Simulating combined bot copying all traders...\n'));
 
-    const validResults = traderResults.filter(r => !r.error && r.copiedTrades > 0);
+    const validResults = traderResults.filter((r) => !r.error && r.copiedTrades > 0);
     const capitalPerTrader = AUDIT_STARTING_CAPITAL / validResults.length;
 
     let totalCapital = 0;
@@ -523,13 +531,15 @@ async function simulateCombinedBot(traderResults: TraderAuditResult[]): Promise<
         totalOpenPositions += result.openPositions;
         totalClosedPositions += result.closedPositions;
 
-        const winningPositions = Array.from(result.positions.values())
-            .filter(p => p.closed && p.pnl > 0).length;
+        const winningPositions = Array.from(result.positions.values()).filter(
+            (p) => p.closed && p.pnl > 0
+        ).length;
         totalWinningPositions += winningPositions;
     }
 
     const roi = (totalPnl / AUDIT_STARTING_CAPITAL) * 100;
-    const winRate = totalClosedPositions > 0 ? (totalWinningPositions / totalClosedPositions) * 100 : 0;
+    const winRate =
+        totalClosedPositions > 0 ? (totalWinningPositions / totalClosedPositions) * 100 : 0;
 
     return {
         startingCapital: AUDIT_STARTING_CAPITAL,
@@ -556,30 +566,38 @@ function printAuditReport(report: AuditReport) {
     console.log(colors.bold('📋 AUDIT CONFIGURATION:'));
     console.log(`  Period: ${colors.yellow(report.config.days + ' days')}`);
     console.log(`  Multiplier: ${colors.yellow(report.config.multiplier + 'x')}`);
-    console.log(`  Starting Capital: ${colors.green('$' + report.config.startingCapital.toFixed(2))}`);
-    console.log(`  Capital per Trader: ${colors.green('$' + report.config.capitalPerTrader.toFixed(2))}`);
+    console.log(
+        `  Starting Capital: ${colors.green('$' + report.config.startingCapital.toFixed(2))}`
+    );
+    console.log(
+        `  Capital per Trader: ${colors.green('$' + report.config.capitalPerTrader.toFixed(2))}`
+    );
     console.log(`  Traders: ${colors.cyan(String(report.config.traders.length))}\n`);
 
     console.log(colors.bold('👥 INDIVIDUAL TRADER RESULTS:\n'));
 
-    const validResults = report.individualResults.filter(r => !r.error);
+    const validResults = report.individualResults.filter((r) => !r.error);
     validResults.forEach((result, idx) => {
         const roiColor = result.roi >= 0 ? colors.green : colors.red;
         const roiSign = result.roi >= 0 ? '+' : '';
 
         console.log(`${idx + 1}. ${colors.blue(result.shortAddress)}`);
-        console.log(`   ROI: ${roiColor(roiSign + result.roi.toFixed(2) + '%')} | ` +
-            `P&L: ${roiSign}$${result.totalPnl.toFixed(2)} | ` +
-            `Trades: ${result.copiedTrades}/${result.totalTrades} | ` +
-            `Win Rate: ${result.winRate.toFixed(1)}%`);
-        console.log(`   Positions: ${result.openPositions} open, ${result.closedPositions} closed | ` +
-            `Realized: $${result.realizedPnl.toFixed(2)}, Unrealized: $${result.unrealizedPnl.toFixed(2)}\n`);
+        console.log(
+            `   ROI: ${roiColor(roiSign + result.roi.toFixed(2) + '%')} | ` +
+                `P&L: ${roiSign}$${result.totalPnl.toFixed(2)} | ` +
+                `Trades: ${result.copiedTrades}/${result.totalTrades} | ` +
+                `Win Rate: ${result.winRate.toFixed(1)}%`
+        );
+        console.log(
+            `   Positions: ${result.openPositions} open, ${result.closedPositions} closed | ` +
+                `Realized: $${result.realizedPnl.toFixed(2)}, Unrealized: $${result.unrealizedPnl.toFixed(2)}\n`
+        );
     });
 
-    const errors = report.individualResults.filter(r => r.error);
+    const errors = report.individualResults.filter((r) => r.error);
     if (errors.length > 0) {
         console.log(colors.yellow(`⚠️  ${errors.length} traders had errors:\n`));
-        errors.forEach(r => {
+        errors.forEach((r) => {
             console.log(`  • ${r.shortAddress} - ${colors.gray(r.error || 'Unknown error')}`);
         });
         console.log();
@@ -594,13 +612,21 @@ function printAuditReport(report: AuditReport) {
 
     console.log(`  Starting Capital: ${colors.green('$' + combined.startingCapital.toFixed(2))}`);
     console.log(`  Current Capital:  ${colors.green('$' + combined.currentCapital.toFixed(2))}`);
-    console.log(`  Total P&L:        ${combinedRoiColor(combinedRoiSign + '$' + combined.totalPnl.toFixed(2))}`);
-    console.log(`  ROI:              ${combinedRoiColor(combinedRoiSign + combined.roi.toFixed(2) + '%')}`);
+    console.log(
+        `  Total P&L:        ${combinedRoiColor(combinedRoiSign + '$' + combined.totalPnl.toFixed(2))}`
+    );
+    console.log(
+        `  ROI:              ${combinedRoiColor(combinedRoiSign + combined.roi.toFixed(2) + '%')}`
+    );
     console.log(`  Realized P&L:     $${combined.realizedPnl.toFixed(2)}`);
     console.log(`  Unrealized P&L:   $${combined.unrealizedPnl.toFixed(2)}`);
     console.log(`  Win Rate:         ${combined.winRate.toFixed(1)}%`);
-    console.log(`  Trades:           ${combined.copiedTrades} copied, ${combined.skippedTrades} skipped`);
-    console.log(`  Positions:        ${combined.openPositions} open, ${combined.closedPositions} closed\n`);
+    console.log(
+        `  Trades:           ${combined.copiedTrades} copied, ${combined.skippedTrades} skipped`
+    );
+    console.log(
+        `  Positions:        ${combined.openPositions} open, ${combined.closedPositions} closed\n`
+    );
 
     console.log(colors.cyan('─'.repeat(100)) + '\n');
     console.log(colors.bold('📊 COMPARATIVE ANALYSIS:\n'));
@@ -609,18 +635,32 @@ function printAuditReport(report: AuditReport) {
 
     console.log(`  Best Trader:               ${colors.green(analysis.bestTrader)}`);
     console.log(`  Worst Trader:              ${colors.red(analysis.worstTrader)}`);
-    console.log(`  Average Win Rate:          ${colors.yellow(analysis.avgWinRate.toFixed(1) + '%')}`);
+    console.log(
+        `  Average Win Rate:          ${colors.yellow(analysis.avgWinRate.toFixed(1) + '%')}`
+    );
     console.log();
-    console.log(`  Expected Combined ROI:     ${colors.yellow(analysis.expectedCombinedROI.toFixed(2) + '%')} (mathematical average)`);
-    console.log(`  Actual Combined ROI:       ${combinedRoiColor(combinedRoiSign + analysis.actualCombinedROI.toFixed(2) + '%')}`);
+    console.log(
+        `  Expected Combined ROI:     ${colors.yellow(analysis.expectedCombinedROI.toFixed(2) + '%')} (mathematical average)`
+    );
+    console.log(
+        `  Actual Combined ROI:       ${combinedRoiColor(combinedRoiSign + analysis.actualCombinedROI.toFixed(2) + '%')}`
+    );
 
-    const deviationColor = Math.abs(analysis.roiDeviation) < 1 ? colors.green :
-                           Math.abs(analysis.roiDeviation) < 5 ? colors.yellow : colors.red;
-    console.log(`  ROI Deviation:             ${deviationColor(analysis.roiDeviation.toFixed(2) + '%')} ${Math.abs(analysis.roiDeviation) < 1 ? '✓' : '⚠️'}`);
+    const deviationColor =
+        Math.abs(analysis.roiDeviation) < 1
+            ? colors.green
+            : Math.abs(analysis.roiDeviation) < 5
+              ? colors.yellow
+              : colors.red;
+    console.log(
+        `  ROI Deviation:             ${deviationColor(analysis.roiDeviation.toFixed(2) + '%')} ${Math.abs(analysis.roiDeviation) < 1 ? '✓' : '⚠️'}`
+    );
 
     const diversificationColor = analysis.diversificationBenefit >= 0 ? colors.green : colors.red;
     const diversificationSign = analysis.diversificationBenefit >= 0 ? '+' : '';
-    console.log(`  Diversification Benefit:   ${diversificationColor(diversificationSign + analysis.diversificationBenefit.toFixed(2) + '%')}`);
+    console.log(
+        `  Diversification Benefit:   ${diversificationColor(diversificationSign + analysis.diversificationBenefit.toFixed(2) + '%')}`
+    );
     console.log();
 
     console.log(colors.cyan('─'.repeat(100)) + '\n');
@@ -630,25 +670,37 @@ function printAuditReport(report: AuditReport) {
     if (Math.abs(analysis.roiDeviation) < 1) {
         console.log(`  ${colors.green('✓')} Algorithm working correctly (ROI deviation < 1%)`);
     } else if (Math.abs(analysis.roiDeviation) < 5) {
-        console.log(`  ${colors.yellow('⚠')} Minor deviation detected (${analysis.roiDeviation.toFixed(2)}%)`);
+        console.log(
+            `  ${colors.yellow('⚠')} Minor deviation detected (${analysis.roiDeviation.toFixed(2)}%)`
+        );
     } else {
-        console.log(`  ${colors.red('✗')} Significant deviation detected (${analysis.roiDeviation.toFixed(2)}%)`);
+        console.log(
+            `  ${colors.red('✗')} Significant deviation detected (${analysis.roiDeviation.toFixed(2)}%)`
+        );
         console.log(`      ${colors.yellow('→ Review algorithm logic for potential issues')}`);
     }
 
     // Diversification analysis
     if (analysis.diversificationBenefit > 5) {
-        console.log(`  ${colors.green('✓')} Strong diversification benefit (+${analysis.diversificationBenefit.toFixed(2)}%)`);
+        console.log(
+            `  ${colors.green('✓')} Strong diversification benefit (+${analysis.diversificationBenefit.toFixed(2)}%)`
+        );
     } else if (analysis.diversificationBenefit > 0) {
-        console.log(`  ${colors.yellow('○')} Moderate diversification benefit (+${analysis.diversificationBenefit.toFixed(2)}%)`);
+        console.log(
+            `  ${colors.yellow('○')} Moderate diversification benefit (+${analysis.diversificationBenefit.toFixed(2)}%)`
+        );
     } else {
-        console.log(`  ${colors.red('✗')} Negative diversification (${analysis.diversificationBenefit.toFixed(2)}%)`);
+        console.log(
+            `  ${colors.red('✗')} Negative diversification (${analysis.diversificationBenefit.toFixed(2)}%)`
+        );
         console.log(`      ${colors.yellow('→ Consider trader selection criteria')}`);
     }
 
     // Overall performance
     if (combined.roi > 15) {
-        console.log(`  ${colors.green('✓')} Excellent performance (${combined.roi.toFixed(2)}% ROI)`);
+        console.log(
+            `  ${colors.green('✓')} Excellent performance (${combined.roi.toFixed(2)}% ROI)`
+        );
     } else if (combined.roi > 5) {
         console.log(`  ${colors.yellow('○')} Good performance (${combined.roi.toFixed(2)}% ROI)`);
     } else if (combined.roi > 0) {
@@ -672,7 +724,7 @@ function saveAuditReport(report: AuditReport) {
     const filepath = path.join(resultsDir, filename);
 
     // Convert Map to object for JSON serialization
-    const serializedResults = report.individualResults.map(r => ({
+    const serializedResults = report.individualResults.map((r) => ({
         ...r,
         positions: Array.from(r.positions.entries()).map(([key, pos]) => ({
             key,
@@ -711,7 +763,9 @@ async function main() {
 
         // Calculate capital per trader for combined simulation
         const capitalPerTrader = AUDIT_STARTING_CAPITAL / traderAddresses.length;
-        console.log(colors.gray(`Capital allocation: $${capitalPerTrader.toFixed(2)} per trader\n`));
+        console.log(
+            colors.gray(`Capital allocation: $${capitalPerTrader.toFixed(2)} per trader\n`)
+        );
 
         // Simulate each trader individually
         console.log(colors.cyan('🔄 Running individual trader simulations...\n'));
@@ -726,30 +780,38 @@ async function main() {
 
             if (!result.error && result.copiedTrades > 0) {
                 const roiColor = result.roi >= 0 ? colors.green : colors.red;
-                console.log(`  ${roiColor(result.roi >= 0 ? '✓' : '✗')} ROI: ${result.roi.toFixed(2)}% | P&L: $${result.totalPnl.toFixed(2)} | Trades: ${result.copiedTrades}`);
+                console.log(
+                    `  ${roiColor(result.roi >= 0 ? '✓' : '✗')} ROI: ${result.roi.toFixed(2)}% | P&L: $${result.totalPnl.toFixed(2)} | Trades: ${result.copiedTrades}`
+                );
             } else {
                 console.log(`  ${colors.yellow('⚠')} ${result.error || 'No trades copied'}`);
             }
             console.log();
 
             // Delay to avoid rate limiting
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
         }
 
         // Simulate combined bot
         const combinedResult = await simulateCombinedBot(individualResults);
 
         // Calculate analysis
-        const validResults = individualResults.filter(r => !r.error && r.copiedTrades > 0);
+        const validResults = individualResults.filter((r) => !r.error && r.copiedTrades > 0);
 
-        const bestTrader = validResults.reduce((best, current) =>
-            current.roi > best.roi ? current : best, validResults[0]);
+        const bestTrader = validResults.reduce(
+            (best, current) => (current.roi > best.roi ? current : best),
+            validResults[0]
+        );
 
-        const worstTrader = validResults.reduce((worst, current) =>
-            current.roi < worst.roi ? current : worst, validResults[0]);
+        const worstTrader = validResults.reduce(
+            (worst, current) => (current.roi < worst.roi ? current : worst),
+            validResults[0]
+        );
 
-        const avgWinRate = validResults.reduce((sum, r) => sum + r.winRate, 0) / validResults.length;
-        const expectedCombinedROI = validResults.reduce((sum, r) => sum + r.roi, 0) / validResults.length;
+        const avgWinRate =
+            validResults.reduce((sum, r) => sum + r.winRate, 0) / validResults.length;
+        const expectedCombinedROI =
+            validResults.reduce((sum, r) => sum + r.roi, 0) / validResults.length;
         const actualCombinedROI = combinedResult.roi;
         const roiDeviation = actualCombinedROI - expectedCombinedROI;
         const diversificationBenefit = actualCombinedROI - expectedCombinedROI;

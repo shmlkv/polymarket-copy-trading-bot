@@ -71,7 +71,10 @@ async function setTokenAllowance() {
             console.log(`🔗 Transaction: https://polygonscan.com/tx/${tx.hash}\n`);
 
             // Verify approval
-            const newApprovalStatus = await ctfContract.isApprovedForAll(PROXY_WALLET, POLYMARKET_EXCHANGE);
+            const newApprovalStatus = await ctfContract.isApprovedForAll(
+                PROXY_WALLET,
+                POLYMARKET_EXCHANGE
+            );
             if (newApprovalStatus) {
                 console.log('✅ Verification: Approval confirmed on-chain');
                 console.log('✅ You can now run: npm run manual-sell\n');

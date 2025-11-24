@@ -130,18 +130,21 @@ The hourglass icon (⏳⌛) animates smoothly, updating 3 times per second. The 
 Your personal wallet address is automatically masked in all logs:
 
 **Before:**
+
 ```
 💼 Your Wallet:
    0x4fbBe5599c06e846D2742014c9eB04A8a3d1DE8C
 ```
 
 **After:**
+
 ```
 💼 Your Wallet:
    0x4fbB**********************************DE8C
 ```
 
 This prevents accidental exposure of your wallet in:
+
 - Screenshots
 - Screen recordings
 - Shared logs
@@ -154,12 +157,15 @@ This prevents accidental exposure of your wallet in:
 ## Color Scheme
 
 ### Logo Colors
+
 The **PolyCopy** ASCII logo features a beautiful gradient:
+
 - Top half: **Cyan** - Fresh, tech-forward feel
 - Bottom half: **Magenta** - Energy and action
 - Tagline: **Gray** - Subtle, professional
 
 ### Message Colors
+
 - **Cyan** (🔵) - Headers, info messages, system status
 - **Green** (🟢) - Success messages, your balance
 - **Yellow** (🟡) - Amounts, trader counts, highlights
@@ -173,6 +179,7 @@ The **PolyCopy** ASCII logo features a beautiful gradient:
 ## What Changed?
 
 ### Before (Old Logging):
+
 ```
 Target User Wallet addresss is: 0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b
 My Wallet addresss is: 0x4fbBe5599c06e846D2742014c9eB04A8a3d1DE8C
@@ -185,6 +192,7 @@ My balance: $1000 | 0x7c3db... balance: $15000
 ```
 
 ❌ Problems:
+
 - Raw console.log outputs
 - API keys visible
 - Wallet fully exposed
@@ -192,6 +200,7 @@ My balance: $1000 | 0x7c3db... balance: $15000
 - No structure
 
 ### After (New Logging):
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   🤖 POLYMARKET COPY TRADING BOT
@@ -212,6 +221,7 @@ Amount: $150
 ```
 
 ✅ Improvements:
+
 - Clean, structured output
 - Wallet address masked
 - No sensitive data exposure
@@ -234,6 +244,7 @@ Amount: $150
 ## Examples by Scenario
 
 ### Successful Trade Copy
+
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   ⚡ 1 NEW TRADE TO COPY
@@ -259,6 +270,7 @@ Balances:
 ```
 
 ### Failed Trade (Price Slippage)
+
 ```
 ──────────────────────────────────────────────────────────────────────
 📊 NEW TRADE DETECTED
@@ -275,6 +287,7 @@ Price:  0.45
 ```
 
 ### Sell Trade
+
 ```
 ──────────────────────────────────────────────────────────────────────
 📊 NEW TRADE DETECTED

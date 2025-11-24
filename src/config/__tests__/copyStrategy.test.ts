@@ -127,4 +127,3 @@ describe('validateCopyStrategyConfig', () => {
         expect(errors.some((e) => e.includes('minOrderSizeUSD'))).toBe(true);
     });
 });
-

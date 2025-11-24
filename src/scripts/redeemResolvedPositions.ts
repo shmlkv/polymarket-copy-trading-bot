@@ -12,7 +12,7 @@ const USDC_ADDRESS = '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174'; // USDC on Po
 
 // Thresholds for considering a position "resolved"
 const RESOLVED_HIGH = 0.99; // Position won (price ~$1)
-const RESOLVED_LOW = 0.01;  // Position lost (price ~$0)
+const RESOLVED_LOW = 0.01; // Position lost (price ~$0)
 const ZERO_THRESHOLD = 0.0001;
 
 interface Position {
@@ -108,7 +108,9 @@ const redeemPosition = async (
 
 const logPositionHeader = (position: Position, index: number, total: number) => {
     const status = position.curPrice >= RESOLVED_HIGH ? '🎉 ПОБЕДА' : '❌ ПРОИГРЫШ';
-    console.log(`\n${index + 1}/${total} ▶ ${status} | ${position.title || position.slug || position.asset}`);
+    console.log(
+        `\n${index + 1}/${total} ▶ ${status} | ${position.title || position.slug || position.asset}`
+    );
     if (position.outcome) {
         console.log(`   Outcome: ${position.outcome}`);
     }
@@ -135,7 +137,9 @@ const main = async () => {
 
     // Check if signer is proxy wallet or owner
     if (wallet.address.toLowerCase() !== PROXY_WALLET.toLowerCase()) {
-        console.log(`⚠️  Note: Signer (${wallet.address}) differs from proxy wallet (${PROXY_WALLET})`);
+        console.log(
+            `⚠️  Note: Signer (${wallet.address}) differs from proxy wallet (${PROXY_WALLET})`
+        );
         console.log(`   Make sure signer has permission to execute transactions on proxy wallet`);
     }
 
@@ -153,7 +157,8 @@ const main = async () => {
     // Filter for resolved and redeemable positions
     const redeemablePositions = allPositions.filter(
         (pos) =>
-            (pos.curPrice >= RESOLVED_HIGH || pos.curPrice <= RESOLVED_LOW) && pos.redeemable === true
+            (pos.curPrice >= RESOLVED_HIGH || pos.curPrice <= RESOLVED_LOW) &&
+            pos.redeemable === true
     );
 
     const activePositions = allPositions.filter(
@@ -185,7 +190,9 @@ const main = async () => {
         positionsByCondition.set(pos.conditionId, existing);
     });
 
-    console.log(`\n📦 Сгруппировано в ${positionsByCondition.size} уникальных условий (conditions)`);
+    console.log(
+        `\n📦 Сгруппировано в ${positionsByCondition.size} уникальных условий (conditions)`
+    );
 
     let conditionIndex = 0;
     for (const [conditionId, positions] of positionsByCondition.entries()) {

@@ -17,7 +17,8 @@ describe('Environment variable parsing', () => {
     });
 
     it('should parse comma-separated USER_ADDRESSES', () => {
-        process.env.USER_ADDRESSES = '0x1234567890123456789012345678901234567890, 0x0987654321098765432109876543210987654321';
+        process.env.USER_ADDRESSES =
+            '0x1234567890123456789012345678901234567890, 0x0987654321098765432109876543210987654321';
         process.env.PROXY_WALLET = '0x1111111111111111111111111111111111111111';
         process.env.PRIVATE_KEY = 'testkey';
         process.env.CLOB_HTTP_URL = 'https://clob.polymarket.com/';
@@ -32,7 +33,8 @@ describe('Environment variable parsing', () => {
     });
 
     it('should parse JSON array USER_ADDRESSES', () => {
-        process.env.USER_ADDRESSES = '["0x1234567890123456789012345678901234567890", "0x0987654321098765432109876543210987654321"]';
+        process.env.USER_ADDRESSES =
+            '["0x1234567890123456789012345678901234567890", "0x0987654321098765432109876543210987654321"]';
         process.env.PROXY_WALLET = '0x1111111111111111111111111111111111111111';
         process.env.PRIVATE_KEY = 'testkey';
         process.env.CLOB_HTTP_URL = 'https://clob.polymarket.com/';
@@ -76,4 +78,3 @@ describe('Environment variable parsing', () => {
         }).toThrow('Invalid FETCH_INTERVAL');
     });
 });
-

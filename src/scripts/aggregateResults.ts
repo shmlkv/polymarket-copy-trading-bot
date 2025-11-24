@@ -72,9 +72,13 @@ interface StrategyPerformance {
 }
 
 async function aggregateResults() {
-    console.log(colors.cyan('\n╔════════════════════════════════════════════════════════════════╗'));
+    console.log(
+        colors.cyan('\n╔════════════════════════════════════════════════════════════════╗')
+    );
     console.log(colors.cyan('║          📊 АГРЕГАТОР РЕЗУЛЬТАТОВ ВСЕХ СТРАТЕГИЙ              ║'));
-    console.log(colors.cyan('╚════════════════════════════════════════════════════════════════╝\n'));
+    console.log(
+        colors.cyan('╚════════════════════════════════════════════════════════════════╝\n')
+    );
 
     const dirs = [
         'trader_scan_results',
@@ -84,7 +88,10 @@ async function aggregateResults() {
     ];
 
     const allStrategies = new Map<string, StrategyPerformance>();
-    const allTraders = new Map<string, { bestROI: number; bestStrategy: string; timesFound: number }>();
+    const allTraders = new Map<
+        string,
+        { bestROI: number; bestStrategy: string; timesFound: number }
+    >();
 
     let totalFiles = 0;
 
@@ -93,7 +100,7 @@ async function aggregateResults() {
         const dirPath = path.join(process.cwd(), dir);
         if (!fs.existsSync(dirPath)) continue;
 
-        const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.json'));
+        const files = fs.readdirSync(dirPath).filter((f) => f.endsWith('.json'));
         console.log(colors.gray(`📁 Сканирование ${dir}/: найдено ${files.length} файлов`));
 
         for (const file of files) {
@@ -228,7 +235,8 @@ async function aggregateResults() {
                 `${colors.yellow(s.bestWinRate.toFixed(1) + '%').padEnd(9)} | ` +
                 `${pnlSign}$${s.bestPnL.toFixed(0).padEnd(9)} | ` +
                 `${s.avgROI.toFixed(1) + '%'}.padEnd(9) | ` +
-                `${s.profitableTraders}/${s.tradersAnalyzed}`.padEnd(10) + ' | ' +
+                `${s.profitableTraders}/${s.tradersAnalyzed}`.padEnd(10) +
+                ' | ' +
                 `${s.filesCount}`
         );
     });
@@ -241,7 +249,11 @@ async function aggregateResults() {
         .sort(([, a], [, b]) => b.bestROI - a.bestROI)
         .slice(0, 10);
 
-    console.log(colors.bold('  #  | Address                                    | Best ROI  | Best Strategy | Найден раз'));
+    console.log(
+        colors.bold(
+            '  #  | Address                                    | Best ROI  | Best Strategy | Найден раз'
+        )
+    );
     console.log(colors.gray('─'.repeat(100)));
 
     topTraders.forEach(([address, data], i) => {
@@ -262,8 +274,14 @@ async function aggregateResults() {
     console.log(colors.cyan('  📈 ОБЩАЯ СТАТИСТИКА'));
     console.log(colors.cyan('═'.repeat(100)) + '\n');
 
-    const totalTraders = Array.from(allStrategies.values()).reduce((sum, s) => sum + s.tradersAnalyzed, 0);
-    const totalProfitable = Array.from(allStrategies.values()).reduce((sum, s) => sum + s.profitableTraders, 0);
+    const totalTraders = Array.from(allStrategies.values()).reduce(
+        (sum, s) => sum + s.tradersAnalyzed,
+        0
+    );
+    const totalProfitable = Array.from(allStrategies.values()).reduce(
+        (sum, s) => sum + s.profitableTraders,
+        0
+    );
     const uniqueTraders = allTraders.size;
     const profitableRate = totalTraders > 0 ? (totalProfitable / totalTraders) * 100 : 0;
 
@@ -286,7 +304,11 @@ async function aggregateResults() {
     }
 
     // Сохранение агрегированных результатов
-    const outputPath = path.join(process.cwd(), 'strategy_factory_results', 'aggregated_results.json');
+    const outputPath = path.join(
+        process.cwd(),
+        'strategy_factory_results',
+        'aggregated_results.json'
+    );
     fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
     const output = {
@@ -304,10 +326,12 @@ async function aggregateResults() {
     };
 
     fs.writeFileSync(outputPath, JSON.stringify(output, null, 2), 'utf8');
-    console.log(`\n${colors.green('✓ Агрегированные результаты сохранены:')} ${colors.cyan(outputPath)}\n`);
+    console.log(
+        `\n${colors.green('✓ Агрегированные результаты сохранены:')} ${colors.cyan(outputPath)}\n`
+    );
 }
 
-aggregateResults().catch(error => {
+aggregateResults().catch((error) => {
     console.error(colors.red('✗ Ошибка:'), error);
     process.exit(1);
 });

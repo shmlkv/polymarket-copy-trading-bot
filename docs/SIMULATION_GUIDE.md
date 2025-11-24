@@ -5,6 +5,7 @@ This guide explains how to use the profitability simulation tool to backtest cop
 ## What Does It Do?
 
 The simulation script:
+
 1. Fetches all historical trades from a trader
 2. Simulates copying each trade with your capital percentage method
 3. Calculates what your P&L would have been
@@ -87,15 +88,18 @@ Open Positions:
 ### Key Metrics
 
 **Capital:**
+
 - `Starting`: Your initial capital
 - `Current`: Your capital now (USDC + position values)
 
 **Performance:**
+
 - `Total P&L`: Overall profit/loss
 - `ROI`: Return on investment percentage
 - `Unrealized`: Profit/loss from open positions
 
 **Trades:**
+
 - `Total trades`: All trades the trader made
 - `Copied`: Trades you would have copied
 - `Skipped`: Trades below minimum or insufficient capital
@@ -167,6 +171,7 @@ const MULTIPLIER = 0.5; // Half the trader's position sizes
 ```
 
 **Good for:**
+
 - Risk-averse traders
 - Testing the waters
 - Smaller capital
@@ -179,6 +184,7 @@ const MULTIPLIER = 3.0; // 3x the trader's position sizes
 ```
 
 **Good for:**
+
 - Confident in trader's strategy
 - Higher risk tolerance
 - Trying to outperform
@@ -191,6 +197,7 @@ const MULTIPLIER = 1.0;
 ```
 
 **Shows:**
+
 - How performance scales with capital
 - Whether you can copy more trades
 - Impact of minimum order size
@@ -200,23 +207,26 @@ const MULTIPLIER = 1.0;
 ### Current Limitations
 
 1. **Historical Capital Estimation**:
-   - Trader's capital at each timestamp is estimated
-   - Real capital fluctuates with market prices
-   - Approximation may differ from reality
+
+    - Trader's capital at each timestamp is estimated
+    - Real capital fluctuates with market prices
+    - Approximation may differ from reality
 
 2. **Simplified Execution**:
-   - Assumes instant fills at trader's price
-   - No slippage modeling
-   - No gas fees included
+
+    - Assumes instant fills at trader's price
+    - No slippage modeling
+    - No gas fees included
 
 3. **Position Values**:
-   - Current positions valued at latest market price
-   - Doesn't account for liquidity issues
-   - May differ from actual execution prices
+
+    - Current positions valued at latest market price
+    - Doesn't account for liquidity issues
+    - May differ from actual execution prices
 
 4. **Closed Positions**:
-   - Realized P&L not fully tracked yet
-   - Focus on current open positions
+    - Realized P&L not fully tracked yet
+    - Focus on current open positions
 
 ### Future Improvements
 
@@ -283,6 +293,7 @@ npm run simulate
 ## Support
 
 If you encounter issues:
+
 - Check trader address is correct (must be active Polymarket trader)
 - Ensure internet connection (fetches from Polymarket API)
 - Look at error messages for API rate limiting

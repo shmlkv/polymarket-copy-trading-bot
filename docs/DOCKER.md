@@ -8,10 +8,10 @@ Complete guide for deploying the Polymarket Copy Trading Bot using Docker and Do
 - [Prerequisites](#prerequisites)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
-  - [Bot Configuration (.env)](#bot-configuration-env)
-  - [Docker Configuration (.env.docker)](#docker-configuration-envdocker)
-  - [MongoDB Setup](#mongodb-setup)
-  - [VPN Setup (Optional)](#vpn-setup-optional)
+    - [Bot Configuration (.env)](#bot-configuration-env)
+    - [Docker Configuration (.env.docker)](#docker-configuration-envdocker)
+    - [MongoDB Setup](#mongodb-setup)
+    - [VPN Setup (Optional)](#vpn-setup-optional)
 - [Running the Bot](#running-the-bot)
 - [Container Management](#container-management)
 - [Troubleshooting](#troubleshooting)
@@ -36,20 +36,22 @@ Docker deployment offers several advantages:
 ## Prerequisites
 
 1. **Docker and Docker Compose installed**
-   - Docker Engine 20.10+
-   - Docker Compose 2.0+
-   - [Install Docker](https://docs.docker.com/get-docker/)
-   - [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+    - Docker Engine 20.10+
+    - Docker Compose 2.0+
+    - [Install Docker](https://docs.docker.com/get-docker/)
+    - [Install Docker Compose](https://docs.docker.com/compose/install/)
 
 2. **System Requirements**
-   - 2GB RAM minimum
-   - 10GB disk space (for MongoDB data)
-   - Linux, macOS, or Windows with WSL2
+
+    - 2GB RAM minimum
+    - 10GB disk space (for MongoDB data)
+    - Linux, macOS, or Windows with WSL2
 
 3. **Trading Prerequisites**
-   - Polygon wallet with USDC balance
-   - Small amount of POL for gas fees (~$5-10)
-   - Infura or Alchemy API key for Polygon RPC
+    - Polygon wallet with USDC balance
+    - Small amount of POL for gas fees (~$5-10)
+    - Infura or Alchemy API key for Polygon RPC
 
 ---
 
@@ -73,6 +75,7 @@ docker-compose up -d
 ```
 
 That's it! The bot will:
+
 - ✅ Build the Docker image
 - ✅ Start MongoDB container
 - ✅ Start VPN container (if configured)
@@ -168,9 +171,10 @@ The Docker setup includes a MongoDB container automatically.
 If you prefer MongoDB Atlas or external database:
 
 1. Set `MONGO_URI` in your `.env` file:
-   ```bash
-   MONGO_URI='mongodb+srv://user:pass@cluster.mongodb.net/database'
-   ```
+
+    ```bash
+    MONGO_URI='mongodb+srv://user:pass@cluster.mongodb.net/database'
+    ```
 
 2. Comment out the `mongodb` service in `docker-compose.yml`
 
@@ -179,6 +183,7 @@ If you prefer MongoDB Atlas or external database:
 ### VPN Setup (Optional)
 
 VPN is **completely optional** and only needed if:
+
 - You're in a geo-restricted region for Polymarket
 - You want to hide trading activity from your ISP
 - You need to bypass regional limitations
@@ -186,6 +191,7 @@ VPN is **completely optional** and only needed if:
 **Supported VPN Providers:**
 
 The Docker setup uses [Gluetun](https://github.com/qdm12/gluetun) which supports 40+ VPN providers including:
+
 - AirVPN
 - NordVPN
 - ExpressVPN
@@ -196,32 +202,35 @@ The Docker setup uses [Gluetun](https://github.com/qdm12/gluetun) which supports
 **VPN Configuration Steps:**
 
 1. **Get WireGuard configuration from your VPN provider**
-   - Most providers offer WireGuard configs in their dashboard
-   - Download or generate a WireGuard config file
+
+    - Most providers offer WireGuard configs in their dashboard
+    - Download or generate a WireGuard config file
 
 2. **Extract required values** from the config file:
-   ```ini
-   [Interface]
-   PrivateKey = YOUR_PRIVATE_KEY_HERE         # → WIREGUARD_PRIVATE_KEY
-   Address = 10.x.x.x/32                      # → WIREGUARD_ADDRESSES
 
-   [Peer]
-   PresharedKey = YOUR_PRESHARED_KEY_HERE     # → WIREGUARD_PRESHARED_KEY (optional)
-   ```
+    ```ini
+    [Interface]
+    PrivateKey = YOUR_PRIVATE_KEY_HERE         # → WIREGUARD_PRIVATE_KEY
+    Address = 10.x.x.x/32                      # → WIREGUARD_ADDRESSES
+
+    [Peer]
+    PresharedKey = YOUR_PRESHARED_KEY_HERE     # → WIREGUARD_PRESHARED_KEY (optional)
+    ```
 
 3. **Add to `.env.docker`:**
-   ```bash
-   VPN_PROVIDER=airvpn
-   WIREGUARD_PRIVATE_KEY=your_private_key
-   WIREGUARD_PRESHARED_KEY=your_preshared_key
-   WIREGUARD_ADDRESSES=10.x.x.x/32
-   VPN_COUNTRIES=Austria, Belgium, Germany, United Kingdom
-   ```
+
+    ```bash
+    VPN_PROVIDER=airvpn
+    WIREGUARD_PRIVATE_KEY=your_private_key
+    WIREGUARD_PRESHARED_KEY=your_preshared_key
+    WIREGUARD_ADDRESSES=10.x.x.x/32
+    VPN_COUNTRIES=Austria, Belgium, Germany, United Kingdom
+    ```
 
 4. **Create VPN directory** (optional, for Gluetun config):
-   ```bash
-   mkdir -p vpn
-   ```
+    ```bash
+    mkdir -p vpn
+    ```
 
 **To Disable VPN:**
 
@@ -231,19 +240,19 @@ If you don't need VPN, you have two options:
 
 ```yaml
 services:
-  # wireguard-vpn:
-  #   [entire service commented out]
+    # wireguard-vpn:
+    #   [entire service commented out]
 
-  polymarket:
-    # Change from:
-    # network_mode: "service:wireguard-vpn"
-    # To:
-    networks:
-      - polymarket-network
-    depends_on:
-      # Remove wireguard-vpn dependency
-      mongodb:
-        condition: service_healthy
+    polymarket:
+        # Change from:
+        # network_mode: "service:wireguard-vpn"
+        # To:
+        networks:
+            - polymarket-network
+        depends_on:
+            # Remove wireguard-vpn dependency
+            mongodb:
+                condition: service_healthy
 ```
 
 **Option 2: Use docker-compose override**
@@ -251,15 +260,15 @@ services:
 Create `docker-compose.override.yml`:
 
 ```yaml
-version: "3.8"
+version: '3.8'
 services:
-  polymarket:
-    networks:
-      - polymarket-network
-    network_mode: null
-    depends_on:
-      mongodb:
-        condition: service_healthy
+    polymarket:
+        networks:
+            - polymarket-network
+        network_mode: null
+        depends_on:
+            mongodb:
+                condition: service_healthy
 ```
 
 ---
@@ -392,11 +401,13 @@ rm -rf mongodb_data mongodb_config vpn
 ### Container Won't Start
 
 **Check logs:**
+
 ```bash
 docker-compose logs polymarket
 ```
 
 **Common causes:**
+
 - Missing `.env` file → Copy from `.env.example`
 - Invalid configuration → Check `USER_ADDRESSES`, `PRIVATE_KEY`, etc.
 - Port conflicts → Check if ports are already in use
@@ -407,6 +418,7 @@ docker-compose logs polymarket
 **Error:** `MongoServerError: Authentication failed`
 
 **Solution:**
+
 ```bash
 # Check MongoDB logs
 docker-compose logs mongodb
@@ -425,17 +437,20 @@ docker-compose up -d
 ### VPN Not Connecting
 
 **Check VPN logs:**
+
 ```bash
 docker-compose logs wireguard-vpn
 ```
 
 **Common issues:**
+
 - Invalid WireGuard keys → Double-check keys from VPN provider
 - VPN provider not supported → Check [Gluetun docs](https://github.com/qdm12/gluetun-wiki/tree/main/setup/providers)
 - Firewall blocking → Allow UDP traffic for WireGuard
 - VPN server down → Try different `SERVER_COUNTRIES`
 
 **Test VPN connection:**
+
 ```bash
 # Check public IP (should be VPN IP, not your real IP)
 docker-compose exec polymarket curl -s https://api.ipify.org
@@ -446,6 +461,7 @@ docker-compose exec polymarket curl -s https://api.ipify.org
 **Error:** `EACCES: permission denied`
 
 **Solution:**
+
 ```bash
 # Get your user ID and group ID
 id -u  # Your UID
@@ -465,12 +481,14 @@ sudo chown -R $(id -u):$(id -g) mongodb_data mongodb_config logs
 ### Bot Not Detecting Trades
 
 **Checklist:**
+
 1. ✅ Trader addresses correct in `.env`
 2. ✅ Traders are actively trading
 3. ✅ MongoDB connection working
 4. ✅ `FETCH_INTERVAL` not too long
 
 **Verify trader activity:**
+
 ```bash
 # Check if trader has recent trades on Polymarket
 # Visit: https://polymarket.com/profile/<trader_address>
@@ -479,16 +497,19 @@ sudo chown -R $(id -u):$(id -g) mongodb_data mongodb_config logs
 ### Container Exits Immediately
 
 **Check exit code:**
+
 ```bash
 docker-compose ps
 ```
 
 **View full logs:**
+
 ```bash
 docker-compose logs polymarket
 ```
 
 **Common causes:**
+
 - Build failed → Check Dockerfile and npm install logs
 - Invalid Node.js version → Ensure Node 18+ in Dockerfile
 - Missing dependencies → Try rebuilding: `docker-compose build --no-cache`
@@ -496,11 +517,13 @@ docker-compose logs polymarket
 ### High CPU/Memory Usage
 
 **Monitor resources:**
+
 ```bash
 docker stats polymarket
 ```
 
 **Optimization tips:**
+
 - Increase `FETCH_INTERVAL` (reduce API polling frequency)
 - Limit number of tracked traders
 - Enable `TRADE_AGGREGATION_ENABLED=true`
@@ -575,11 +598,11 @@ docker-compose exec polymarket curl -s https://api.ipify.org
 ```yaml
 # docker-compose.yml
 networks:
-  polymarket-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.25.0.0/16  # Change subnet if conflicts
+    polymarket-network:
+        driver: bridge
+        ipam:
+            config:
+                - subnet: 172.25.0.0/16 # Change subnet if conflicts
 ```
 
 ### Resource Limits
@@ -587,15 +610,15 @@ networks:
 ```yaml
 # docker-compose.yml
 services:
-  polymarket:
-    deploy:
-      resources:
-        limits:
-          cpus: '2'
-          memory: 2G
-        reservations:
-          cpus: '1'
-          memory: 512M
+    polymarket:
+        deploy:
+            resources:
+                limits:
+                    cpus: '2'
+                    memory: 2G
+                reservations:
+                    cpus: '1'
+                    memory: 512M
 ```
 
 ### Logging Configuration
@@ -603,12 +626,12 @@ services:
 ```yaml
 # docker-compose.yml
 services:
-  polymarket:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+    polymarket:
+        logging:
+            driver: 'json-file'
+            options:
+                max-size: '10m'
+                max-file: '3'
 ```
 
 ### Multiple Bot Instances
@@ -639,13 +662,13 @@ If using MongoDB Atlas instead of local container:
 ```yaml
 # docker-compose.yml
 services:
-  # Comment out mongodb service
+    # Comment out mongodb service
 
-  polymarket:
-    # Remove mongodb from depends_on
-    environment:
-      # Override with Atlas connection string
-      MONGO_URI: "mongodb+srv://user:pass@cluster.mongodb.net/db"
+    polymarket:
+        # Remove mongodb from depends_on
+        environment:
+            # Override with Atlas connection string
+            MONGO_URI: 'mongodb+srv://user:pass@cluster.mongodb.net/db'
 ```
 
 ---
@@ -667,10 +690,10 @@ If you encounter issues:
 2. Review container logs: `docker-compose logs`
 3. Search existing GitHub issues
 4. Open a new issue with:
-   - Docker version: `docker --version`
-   - Compose version: `docker-compose --version`
-   - OS and architecture
-   - Full error logs (redact sensitive info)
+    - Docker version: `docker --version`
+    - Compose version: `docker-compose --version`
+    - OS and architecture
+    - Full error logs (redact sensitive info)
 
 ---
 

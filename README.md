@@ -142,6 +142,7 @@ docker-compose logs -f polymarket
 📖 **[Complete Docker Guide →](./docs/DOCKER.md)**
 
 The comprehensive guide covers:
+
 - Detailed configuration (MongoDB, VPN)
 - Container management commands
 - Troubleshooting common issues

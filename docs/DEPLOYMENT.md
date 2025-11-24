@@ -164,10 +164,10 @@ chmod 600 .env
 ```
 
 4. **Use secrets management** - Consider using:
-   - AWS Secrets Manager
-   - HashiCorp Vault
-   - Kubernetes Secrets
-   - Docker Secrets
+    - AWS Secrets Manager
+    - HashiCorp Vault
+    - Kubernetes Secrets
+    - Docker Secrets
 
 ## Health Checks
 
@@ -270,16 +270,19 @@ docker run --rm -v polymarket-copy-trading-bot_mongodb-data:/data -v $(pwd):/bac
 ### Bot Not Starting
 
 1. Check environment variables:
+
 ```bash
 npm run health-check
 ```
 
 2. Verify MongoDB connection:
+
 ```bash
 mongosh "mongodb://your-connection-string"
 ```
 
 3. Check RPC endpoint:
+
 ```bash
 curl -X POST -H "Content-Type: application/json" \
   --data '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}' \
@@ -289,6 +292,7 @@ curl -X POST -H "Content-Type: application/json" \
 ### Trades Not Executing
 
 1. Check USDC balance:
+
 ```bash
 npm run check-allowance
 ```
@@ -313,17 +317,20 @@ NODE_OPTIONS="--max-old-space-size=2048" node dist/index.js
 ### Updating the Bot
 
 1. **Pull latest changes:**
+
 ```bash
 git pull origin main
 ```
 
 2. **Rebuild:**
+
 ```bash
 npm ci
 npm run build
 ```
 
 3. **Restart:**
+
 ```bash
 # Docker
 docker-compose restart bot
@@ -377,7 +384,6 @@ For issues or questions:
 2. Review logs for error messages
 3. Run health check: `npm run health-check`
 4. Open GitHub issue with:
-   - Error logs
-   - Configuration (redacted)
-   - Steps to reproduce
-
+    - Error logs
+    - Configuration (redacted)
+    - Steps to reproduce

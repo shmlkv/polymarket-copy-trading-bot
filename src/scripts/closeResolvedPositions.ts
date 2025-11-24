@@ -12,7 +12,7 @@ const ZERO_THRESHOLD = 0.0001;
 
 // Thresholds for considering a position "resolved"
 const RESOLVED_HIGH = 0.99; // Position won (price ~$1)
-const RESOLVED_LOW = 0.01;  // Position lost (price ~$0)
+const RESOLVED_LOW = 0.01; // Position lost (price ~$0)
 
 interface Position {
     asset: string;
@@ -91,14 +91,19 @@ const updatePolymarketCache = async (clobClient: ClobClient, tokenId: string) =>
     }
 };
 
-const sellEntirePosition = async (clobClient: ClobClient, position: Position): Promise<SellResult> => {
+const sellEntirePosition = async (
+    clobClient: ClobClient,
+    position: Position
+): Promise<SellResult> => {
     let remaining = position.size;
     let attempts = 0;
     let soldTokens = 0;
     let proceedsUsd = 0;
 
     if (remaining < MIN_SELL_TOKENS) {
-        console.log(`   ❌ Position size ${remaining.toFixed(4)} < ${MIN_SELL_TOKENS} token minimum, skipping`);
+        console.log(
+            `   ❌ Position size ${remaining.toFixed(4)} < ${MIN_SELL_TOKENS} token minimum, skipping`
+        );
         return { soldTokens: 0, proceedsUsd: 0, remainingTokens: remaining };
     }
 
@@ -120,7 +125,9 @@ const sellEntirePosition = async (clobClient: ClobClient, position: Position): P
         const bidPrice = parseFloat(bestBid.price);
 
         if (bidSize < MIN_SELL_TOKENS) {
-            console.log(`   ❌ Best bid only for ${bidSize.toFixed(2)} tokens (< ${MIN_SELL_TOKENS})`);
+            console.log(
+                `   ❌ Best bid only for ${bidSize.toFixed(2)} tokens (< ${MIN_SELL_TOKENS})`
+            );
             break;
         }
 
@@ -148,16 +155,22 @@ const sellEntirePosition = async (clobClient: ClobClient, position: Position): P
                 proceedsUsd += tradeValue;
                 remaining -= sellAmount;
                 attempts = 0;
-                console.log(`   ✅ Sold ${sellAmount.toFixed(2)} tokens @ $${bidPrice.toFixed(3)} (≈ $${tradeValue.toFixed(2)})`);
+                console.log(
+                    `   ✅ Sold ${sellAmount.toFixed(2)} tokens @ $${bidPrice.toFixed(3)} (≈ $${tradeValue.toFixed(2)})`
+                );
             } else {
                 attempts += 1;
                 const errorMessage = extractOrderError(resp);
 
                 if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
-                    console.log(`   ❌ Order rejected: ${errorMessage ?? 'balance/allowance issue'}`);
+                    console.log(
+                        `   ❌ Order rejected: ${errorMessage ?? 'balance/allowance issue'}`
+                    );
                     break;
                 }
-                console.log(`   ⚠️  Sell attempt ${attempts}/${RETRY_LIMIT} failed${errorMessage ? ` – ${errorMessage}` : ''}`);
+                console.log(
+                    `   ⚠️  Sell attempt ${attempts}/${RETRY_LIMIT} failed${errorMessage ? ` – ${errorMessage}` : ''}`
+                );
             }
         } catch (error) {
             attempts += 1;
@@ -168,7 +181,9 @@ const sellEntirePosition = async (clobClient: ClobClient, position: Position): P
     if (remaining >= MIN_SELL_TOKENS) {
         console.log(`   ⚠️  Remaining unsold: ${remaining.toFixed(2)} tokens`);
     } else if (remaining > 0) {
-        console.log(`   ℹ️  Residual dust < ${MIN_SELL_TOKENS} token left (${remaining.toFixed(4)})`);
+        console.log(
+            `   ℹ️  Residual dust < ${MIN_SELL_TOKENS} token left (${remaining.toFixed(4)})`
+        );
     }
 
     return { soldTokens, proceedsUsd, remainingTokens: remaining };
@@ -183,12 +198,18 @@ const loadPositions = async (address: string): Promise<Position[]> => {
 
 const logPositionHeader = (position: Position, index: number, total: number) => {
     const status = position.curPrice >= RESOLVED_HIGH ? '🎉 ПОБЕДА' : '❌ ПРОИГРЫШ';
-    console.log(`\n${index + 1}/${total} ▶ ${status} | ${position.title || position.slug || position.asset}`);
+    console.log(
+        `\n${index + 1}/${total} ▶ ${status} | ${position.title || position.slug || position.asset}`
+    );
     if (position.outcome) {
         console.log(`   Outcome: ${position.outcome}`);
     }
-    console.log(`   Size: ${position.size.toFixed(2)} tokens @ avg $${position.avgPrice.toFixed(3)}`);
-    console.log(`   Current price: $${position.curPrice.toFixed(4)} (Est. value: $${position.currentValue.toFixed(2)})`);
+    console.log(
+        `   Size: ${position.size.toFixed(2)} tokens @ avg $${position.avgPrice.toFixed(3)}`
+    );
+    console.log(
+        `   Current price: $${position.curPrice.toFixed(4)} (Est. value: $${position.currentValue.toFixed(2)})`
+    );
     if (position.redeemable) {
         console.log('   ℹ️  Market is redeemable — можно погасить напрямую');
     }
@@ -212,12 +233,12 @@ const main = async () => {
     }
 
     // Separate positions into resolved and active
-    const resolvedPositions = allPositions.filter((pos) =>
-        pos.curPrice >= RESOLVED_HIGH || pos.curPrice <= RESOLVED_LOW
+    const resolvedPositions = allPositions.filter(
+        (pos) => pos.curPrice >= RESOLVED_HIGH || pos.curPrice <= RESOLVED_LOW
     );
 
-    const activePositions = allPositions.filter((pos) =>
-        pos.curPrice > RESOLVED_LOW && pos.curPrice < RESOLVED_HIGH
+    const activePositions = allPositions.filter(
+        (pos) => pos.curPrice > RESOLVED_LOW && pos.curPrice < RESOLVED_HIGH
     );
 
     console.log(`\n📊 Статистика позиций:`);

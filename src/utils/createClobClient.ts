@@ -34,7 +34,9 @@ const createClobClient = async (): Promise<ClobClient> => {
     const isProxySafe = await isGnosisSafe(PROXY_WALLET as string);
     const signatureType = isProxySafe ? SignatureType.POLY_GNOSIS_SAFE : SignatureType.EOA;
 
-    Logger.info(`Wallet type detected: ${isProxySafe ? 'Gnosis Safe' : 'EOA (Externally Owned Account)'}`);
+    Logger.info(
+        `Wallet type detected: ${isProxySafe ? 'Gnosis Safe' : 'EOA (Externally Owned Account)'}`
+    );
 
     let clobClient = new ClobClient(
         host,
@@ -42,7 +44,7 @@ const createClobClient = async (): Promise<ClobClient> => {
         wallet,
         undefined,
         signatureType,
-        isProxySafe ? PROXY_WALLET as string : undefined
+        isProxySafe ? (PROXY_WALLET as string) : undefined
     );
 
     // Suppress console output during API key creation
@@ -62,7 +64,7 @@ const createClobClient = async (): Promise<ClobClient> => {
         wallet,
         creds,
         signatureType,
-        isProxySafe ? PROXY_WALLET as string : undefined
+        isProxySafe ? (PROXY_WALLET as string) : undefined
     );
 
     // Restore console functions

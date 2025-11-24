@@ -41,7 +41,9 @@ async function verifyAllowance() {
         console.log('═'.repeat(70));
         console.log(`💼 Wallet:     ${PROXY_WALLET}`);
         console.log(`💵 USDC:       ${balanceFormatted} USDC`);
-        console.log(`✅ Allowance:  ${currentAllowance.isZero() ? '0 USDC (NOT SET!)' : allowanceFormatted + ' USDC (SET!)'}`);
+        console.log(
+            `✅ Allowance:  ${currentAllowance.isZero() ? '0 USDC (NOT SET!)' : allowanceFormatted + ' USDC (SET!)'}`
+        );
         console.log(`📍 Exchange:   ${POLYMARKET_EXCHANGE}`);
         console.log('═'.repeat(70));
 

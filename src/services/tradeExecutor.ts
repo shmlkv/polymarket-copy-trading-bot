@@ -47,9 +47,11 @@ const readTempTrades = async (): Promise<TradeWithUser[]> => {
     for (const { address, model } of userActivityModels) {
         // Only get trades that haven't been processed yet (bot: false AND botExcutedTime: 0)
         // This prevents processing the same trade multiple times
-        const trades = await model.find({
-            $and: [{ type: 'TRADE' }, { bot: false }, { botExcutedTime: 0 }],
-        }).exec();
+        const trades = await model
+            .find({
+                $and: [{ type: 'TRADE' }, { bot: false }, { botExcutedTime: 0 }],
+            })
+            .exec();
 
         const tradesWithUser = trades.map((trade) => ({
             ...(trade.toObject() as UserActivityInterface),
@@ -82,7 +84,7 @@ const addToAggregationBuffer = (trade: TradeWithUser): void => {
         existing.trades.push(trade);
         existing.totalUsdcSize += trade.usdcSize;
         // Recalculate weighted average price
-        const totalValue = existing.trades.reduce((sum, t) => sum + (t.usdcSize * t.price), 0);
+        const totalValue = existing.trades.reduce((sum, t) => sum + t.usdcSize * t.price, 0);
         existing.averagePrice = totalValue / existing.totalUsdcSize;
         existing.lastTradeTime = now;
     } else {
@@ -124,7 +126,9 @@ const getReadyAggregatedTrades = (): AggregatedTrade[] => {
                 ready.push(agg);
             } else {
                 // Window passed but total too small - mark individual trades as skipped
-                Logger.info(`Trade aggregation for ${agg.userAddress} on ${agg.slug || agg.asset}: $${agg.totalUsdcSize.toFixed(2)} total from ${agg.trades.length} trades below minimum ($${TRADE_AGGREGATION_MIN_TOTAL_USD}) - skipping`);
+                Logger.info(
+                    `Trade aggregation for ${agg.userAddress} on ${agg.slug || agg.asset}: $${agg.totalUsdcSize.toFixed(2)} total from ${agg.trades.length} trades below minimum ($${TRADE_AGGREGATION_MIN_TOTAL_USD}) - skipping`
+                );
 
                 // Mark all trades in this aggregation as processed (bot: true)
                 for (const trade of agg.trades) {
@@ -144,10 +148,7 @@ const doTrading = async (clobClient: ClobClient, trades: TradeWithUser[]) => {
     for (const trade of trades) {
         // Mark trade as being processed immediately to prevent duplicate processing
         const UserActivity = getUserActivityModel(trade.userAddress);
-        await UserActivity.updateOne(
-            { _id: trade._id },
-            { $set: { botExcutedTime: 1 } }
-        );
+        await UserActivity.updateOne({ _id: trade._id }, { $set: { botExcutedTime: 1 } });
 
         Logger.trade(trade.userAddress, trade.side || 'UNKNOWN', {
             asset: trade.asset,
@@ -212,10 +213,7 @@ const doAggregatedTrading = async (clobClient: ClobClient, aggregatedTrades: Agg
         // Mark all individual trades as being processed
         for (const trade of agg.trades) {
             const UserActivity = getUserActivityModel(trade.userAddress);
-            await UserActivity.updateOne(
-                { _id: trade._id },
-                { $set: { botExcutedTime: 1 } }
-            );
+            await UserActivity.updateOne({ _id: trade._id }, { $set: { botExcutedTime: 1 } });
         }
 
         const my_positions: UserPositionInterface[] = await fetchData(
@@ -279,7 +277,9 @@ export const stopTradeExecutor = () => {
 const tradeExecutor = async (clobClient: ClobClient) => {
     Logger.success(`Trade executor ready for ${USER_ADDRESSES.length} trader(s)`);
     if (TRADE_AGGREGATION_ENABLED) {
-        Logger.info(`Trade aggregation enabled: ${TRADE_AGGREGATION_WINDOW_SECONDS}s window, $${TRADE_AGGREGATION_MIN_TOTAL_USD} minimum`);
+        Logger.info(
+            `Trade aggregation enabled: ${TRADE_AGGREGATION_WINDOW_SECONDS}s window, $${TRADE_AGGREGATION_MIN_TOTAL_USD} minimum`
+        );
     }
 
     let lastCheck = Date.now();
@@ -290,13 +290,17 @@ const tradeExecutor = async (clobClient: ClobClient) => {
             // Process with aggregation logic
             if (trades.length > 0) {
                 Logger.clearLine();
-                Logger.info(`📥 ${trades.length} new trade${trades.length > 1 ? 's' : ''} detected`);
+                Logger.info(
+                    `📥 ${trades.length} new trade${trades.length > 1 ? 's' : ''} detected`
+                );
 
                 // Add trades to aggregation buffer
                 for (const trade of trades) {
                     // Only aggregate BUY trades below minimum threshold
                     if (trade.side === 'BUY' && trade.usdcSize < TRADE_AGGREGATION_MIN_TOTAL_USD) {
-                        Logger.info(`Adding $${trade.usdcSize.toFixed(2)} ${trade.side} trade to aggregation buffer for ${trade.slug || trade.asset}`);
+                        Logger.info(
+                            `Adding $${trade.usdcSize.toFixed(2)} ${trade.side} trade to aggregation buffer for ${trade.slug || trade.asset}`
+                        );
                         addToAggregationBuffer(trade);
                     } else {
                         // Execute large trades immediately (not aggregated)
@@ -312,7 +316,9 @@ const tradeExecutor = async (clobClient: ClobClient) => {
             const readyAggregations = getReadyAggregatedTrades();
             if (readyAggregations.length > 0) {
                 Logger.clearLine();
-                Logger.header(`⚡ ${readyAggregations.length} AGGREGATED TRADE${readyAggregations.length > 1 ? 'S' : ''} READY`);
+                Logger.header(
+                    `⚡ ${readyAggregations.length} AGGREGATED TRADE${readyAggregations.length > 1 ? 'S' : ''} READY`
+                );
                 await doAggregatedTrading(clobClient, readyAggregations);
                 lastCheck = Date.now();
             }
@@ -322,7 +328,10 @@ const tradeExecutor = async (clobClient: ClobClient) => {
                 if (Date.now() - lastCheck > 300) {
                     const bufferedCount = tradeAggregationBuffer.size;
                     if (bufferedCount > 0) {
-                        Logger.waiting(USER_ADDRESSES.length, `${bufferedCount} trade group(s) pending`);
+                        Logger.waiting(
+                            USER_ADDRESSES.length,
+                            `${bufferedCount} trade group(s) pending`
+                        );
                     } else {
                         Logger.waiting(USER_ADDRESSES.length);
                     }
@@ -333,7 +342,9 @@ const tradeExecutor = async (clobClient: ClobClient) => {
             // Original non-aggregation logic
             if (trades.length > 0) {
                 Logger.clearLine();
-                Logger.header(`⚡ ${trades.length} NEW TRADE${trades.length > 1 ? 'S' : ''} TO COPY`);
+                Logger.header(
+                    `⚡ ${trades.length} NEW TRADE${trades.length > 1 ? 'S' : ''} TO COPY`
+                );
                 await doTrading(clobClient, trades);
                 lastCheck = Date.now();
             } else {
@@ -348,7 +359,7 @@ const tradeExecutor = async (clobClient: ClobClient) => {
         if (!isRunning) break;
         await new Promise((resolve) => setTimeout(resolve, 300));
     }
-    
+
     Logger.info('Trade executor stopped');
 };
 

@@ -280,7 +280,8 @@ function calculateSharpeRatio(equityPoints: EquityPoint[], riskFreeRate: number 
     const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
 
     // Calculate standard deviation
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+    const variance =
+        returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
     const stdDev = Math.sqrt(variance);
 
     if (stdDev === 0) {
@@ -318,7 +319,8 @@ function calculateVolatility(equityPoints: EquityPoint[]): number {
     }
 
     const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
-    const variance = returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
+    const variance =
+        returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) / returns.length;
     return Math.sqrt(variance);
 }
 
@@ -360,7 +362,7 @@ function calculateRiskScore(
     const winRateScore = Math.max(0, 100 - winRate); // Higher win rate = lower score
 
     // Weighted average
-    return (mddScore * 0.4 + sharpeScore * 0.3 + volatilityScore * 0.2 + winRateScore * 0.1);
+    return mddScore * 0.4 + sharpeScore * 0.3 + volatilityScore * 0.2 + winRateScore * 0.1;
 }
 
 /**
@@ -400,7 +402,10 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
         // Calculate trading period
         const firstTrade = trades[0];
         const lastTrade = trades[trades.length - 1];
-        const tradingDays = Math.max(1, Math.floor((lastTrade.timestamp - firstTrade.timestamp) / (24 * 60 * 60)));
+        const tradingDays = Math.max(
+            1,
+            Math.floor((lastTrade.timestamp - firstTrade.timestamp) / (24 * 60 * 60))
+        );
 
         if (tradingDays < MIN_TRADING_DAYS) {
             return {
@@ -471,8 +476,13 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
 
         // Calculate win rate (simplified)
         const closedPositions = Array.from(positions.values()).filter((p) => p.size === 0);
-        const winningPositions = closedPositions.filter((p) => (p.currentValue || p.initialValue) > p.initialValue);
-        const winRate = closedPositions.length > 0 ? (winningPositions.length / closedPositions.length) * 100 : 0;
+        const winningPositions = closedPositions.filter(
+            (p) => (p.currentValue || p.initialValue) > p.initialValue
+        );
+        const winRate =
+            closedPositions.length > 0
+                ? (winningPositions.length / closedPositions.length) * 100
+                : 0;
 
         // Calculate profit factor
         const profitFactor = calculateProfitFactor(trades, positions);
@@ -489,9 +499,19 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
 
         // Determine status based on risk-adjusted metrics
         let status: 'excellent' | 'good' | 'average' | 'poor' | 'bad';
-        if (roi >= MIN_ROI_THRESHOLD && sharpeRatio >= MIN_SHARPE_THRESHOLD && mdd <= MAX_MDD_THRESHOLD && riskScore < 30) {
+        if (
+            roi >= MIN_ROI_THRESHOLD &&
+            sharpeRatio >= MIN_SHARPE_THRESHOLD &&
+            mdd <= MAX_MDD_THRESHOLD &&
+            riskScore < 30
+        ) {
             status = 'excellent';
-        } else if (roi >= MIN_ROI_THRESHOLD * 0.7 && sharpeRatio >= MIN_SHARPE_THRESHOLD * 0.7 && mdd <= MAX_MDD_THRESHOLD * 1.5 && riskScore < 50) {
+        } else if (
+            roi >= MIN_ROI_THRESHOLD * 0.7 &&
+            sharpeRatio >= MIN_SHARPE_THRESHOLD * 0.7 &&
+            mdd <= MAX_MDD_THRESHOLD * 1.5 &&
+            riskScore < 50
+        ) {
             status = 'good';
         } else if (roi >= 0 && sharpeRatio >= 0.5 && mdd <= 40 && riskScore < 70) {
             status = 'average';
@@ -556,17 +576,30 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
  * Print analysis results
  */
 function printResults(results: TraderAnalysis[]) {
-    console.log('\n' + colors.bold(colors.cyan('═══════════════════════════════════════════════════════════')));
+    console.log(
+        '\n' +
+            colors.bold(colors.cyan('═══════════════════════════════════════════════════════════'))
+    );
     console.log(colors.bold(colors.cyan('  🎯 LOW-RISK HIGH-PERFORMANCE TRADERS ANALYSIS')));
-    console.log(colors.bold(colors.cyan('═══════════════════════════════════════════════════════════\n')));
+    console.log(
+        colors.bold(colors.cyan('═══════════════════════════════════════════════════════════\n'))
+    );
 
     // Show all results first (for debugging)
     console.log(colors.cyan('\n📊 All Analyzed Traders:\n'));
     for (const trader of results) {
         if (trader.error) {
-            console.log(colors.red(`❌ ${trader.address.slice(0, 10)}...${trader.address.slice(-8)}: ${trader.error}`));
+            console.log(
+                colors.red(
+                    `❌ ${trader.address.slice(0, 10)}...${trader.address.slice(-8)}: ${trader.error}`
+                )
+            );
         } else {
-            console.log(colors.gray(`${trader.address.slice(0, 10)}...${trader.address.slice(-8)}: ROI=${trader.roi.toFixed(2)}%, Sharpe=${trader.sharpeRatio.toFixed(2)}, MDD=${trader.maxDrawdown.toFixed(2)}%, Risk=${trader.riskScore.toFixed(1)}`));
+            console.log(
+                colors.gray(
+                    `${trader.address.slice(0, 10)}...${trader.address.slice(-8)}: ROI=${trader.roi.toFixed(2)}%, Sharpe=${trader.sharpeRatio.toFixed(2)}, MDD=${trader.maxDrawdown.toFixed(2)}%, Risk=${trader.riskScore.toFixed(1)}`
+                )
+            );
         }
     }
 
@@ -580,8 +613,16 @@ function printResults(results: TraderAnalysis[]) {
 
     if (filtered.length === 0) {
         console.log(colors.yellow('\n⚠️  No traders found matching the criteria.'));
-        console.log(colors.gray(`   Criteria: ROI >= ${MIN_ROI_THRESHOLD}%, Sharpe >= ${MIN_SHARPE_THRESHOLD}, MDD <= ${MAX_MDD_THRESHOLD}%`));
-        console.log(colors.gray(`   Try relaxing thresholds or check if traders have enough trading history.\n`));
+        console.log(
+            colors.gray(
+                `   Criteria: ROI >= ${MIN_ROI_THRESHOLD}%, Sharpe >= ${MIN_SHARPE_THRESHOLD}, MDD <= ${MAX_MDD_THRESHOLD}%`
+            )
+        );
+        console.log(
+            colors.gray(
+                `   Try relaxing thresholds or check if traders have enough trading history.\n`
+            )
+        );
         return;
     }
 
@@ -601,8 +642,12 @@ function printResults(results: TraderAnalysis[]) {
         console.log(`   Profile: ${trader.profileUrl}`);
         console.log(`   Status: ${statusColor(trader.status.toUpperCase())}`);
         console.log(`   Risk Score: ${colors.bold(trader.riskScore.toFixed(1))} (lower is better)`);
-        console.log(`   ROI: ${trader.roi >= 0 ? colors.green : colors.red}${trader.roi.toFixed(2)}%`);
-        console.log(`   Sharpe Ratio: ${colors.cyan(trader.sharpeRatio.toFixed(2))} ${trader.sharpeRatio >= 2 ? '⭐' : ''}`);
+        console.log(
+            `   ROI: ${trader.roi >= 0 ? colors.green : colors.red}${trader.roi.toFixed(2)}%`
+        );
+        console.log(
+            `   Sharpe Ratio: ${colors.cyan(trader.sharpeRatio.toFixed(2))} ${trader.sharpeRatio >= 2 ? '⭐' : ''}`
+        );
         console.log(`   Max Drawdown: ${colors.yellow(trader.maxDrawdown.toFixed(2))}%`);
         console.log(`   Calmar Ratio: ${colors.blue(trader.calmarRatio.toFixed(2))}`);
         console.log(`   Win Rate: ${trader.winRate.toFixed(1)}%`);
@@ -664,4 +709,3 @@ main().catch((error) => {
     console.error(colors.red('Fatal error:'), error);
     process.exit(1);
 });
-

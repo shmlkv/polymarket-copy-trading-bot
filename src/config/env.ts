@@ -50,7 +50,10 @@ const validateAddresses = (): void => {
         );
     }
 
-    if (process.env.USDC_CONTRACT_ADDRESS && !isValidEthereumAddress(process.env.USDC_CONTRACT_ADDRESS)) {
+    if (
+        process.env.USDC_CONTRACT_ADDRESS &&
+        !isValidEthereumAddress(process.env.USDC_CONTRACT_ADDRESS)
+    ) {
         throw new Error(
             `Invalid USDC_CONTRACT_ADDRESS format: ${process.env.USDC_CONTRACT_ADDRESS}\n` +
                 `Expected format: 0x followed by 40 hexadecimal characters`
@@ -64,27 +67,37 @@ const validateAddresses = (): void => {
 const validateNumericConfig = (): void => {
     const fetchInterval = parseInt(process.env.FETCH_INTERVAL || '1', 10);
     if (isNaN(fetchInterval) || fetchInterval <= 0) {
-        throw new Error(`Invalid FETCH_INTERVAL: ${process.env.FETCH_INTERVAL}. Must be a positive integer.`);
+        throw new Error(
+            `Invalid FETCH_INTERVAL: ${process.env.FETCH_INTERVAL}. Must be a positive integer.`
+        );
     }
 
     const retryLimit = parseInt(process.env.RETRY_LIMIT || '3', 10);
     if (isNaN(retryLimit) || retryLimit < 1 || retryLimit > 10) {
-        throw new Error(`Invalid RETRY_LIMIT: ${process.env.RETRY_LIMIT}. Must be between 1 and 10.`);
+        throw new Error(
+            `Invalid RETRY_LIMIT: ${process.env.RETRY_LIMIT}. Must be between 1 and 10.`
+        );
     }
 
     const tooOldTimestamp = parseInt(process.env.TOO_OLD_TIMESTAMP || '24', 10);
     if (isNaN(tooOldTimestamp) || tooOldTimestamp < 1) {
-        throw new Error(`Invalid TOO_OLD_TIMESTAMP: ${process.env.TOO_OLD_TIMESTAMP}. Must be a positive integer (hours).`);
+        throw new Error(
+            `Invalid TOO_OLD_TIMESTAMP: ${process.env.TOO_OLD_TIMESTAMP}. Must be a positive integer (hours).`
+        );
     }
 
     const requestTimeout = parseInt(process.env.REQUEST_TIMEOUT_MS || '10000', 10);
     if (isNaN(requestTimeout) || requestTimeout < 1000) {
-        throw new Error(`Invalid REQUEST_TIMEOUT_MS: ${process.env.REQUEST_TIMEOUT_MS}. Must be at least 1000ms.`);
+        throw new Error(
+            `Invalid REQUEST_TIMEOUT_MS: ${process.env.REQUEST_TIMEOUT_MS}. Must be at least 1000ms.`
+        );
     }
 
     const networkRetryLimit = parseInt(process.env.NETWORK_RETRY_LIMIT || '3', 10);
     if (isNaN(networkRetryLimit) || networkRetryLimit < 1 || networkRetryLimit > 10) {
-        throw new Error(`Invalid NETWORK_RETRY_LIMIT: ${process.env.NETWORK_RETRY_LIMIT}. Must be between 1 and 10.`);
+        throw new Error(
+            `Invalid NETWORK_RETRY_LIMIT: ${process.env.NETWORK_RETRY_LIMIT}. Must be between 1 and 10.`
+        );
     }
 };
 
@@ -93,11 +106,15 @@ const validateNumericConfig = (): void => {
  */
 const validateUrls = (): void => {
     if (process.env.CLOB_HTTP_URL && !process.env.CLOB_HTTP_URL.startsWith('http')) {
-        throw new Error(`Invalid CLOB_HTTP_URL: ${process.env.CLOB_HTTP_URL}. Must be a valid HTTP/HTTPS URL.`);
+        throw new Error(
+            `Invalid CLOB_HTTP_URL: ${process.env.CLOB_HTTP_URL}. Must be a valid HTTP/HTTPS URL.`
+        );
     }
 
     if (process.env.CLOB_WS_URL && !process.env.CLOB_WS_URL.startsWith('ws')) {
-        throw new Error(`Invalid CLOB_WS_URL: ${process.env.CLOB_WS_URL}. Must be a valid WebSocket URL (ws:// or wss://).`);
+        throw new Error(
+            `Invalid CLOB_WS_URL: ${process.env.CLOB_WS_URL}. Must be a valid WebSocket URL (ws:// or wss://).`
+        );
     }
 
     if (process.env.RPC_URL && !process.env.RPC_URL.startsWith('http')) {
@@ -105,7 +122,9 @@ const validateUrls = (): void => {
     }
 
     if (process.env.MONGO_URI && !process.env.MONGO_URI.startsWith('mongodb')) {
-        throw new Error(`Invalid MONGO_URI: ${process.env.MONGO_URI}. Must be a valid MongoDB connection string.`);
+        throw new Error(
+            `Invalid MONGO_URI: ${process.env.MONGO_URI}. Must be a valid MongoDB connection string.`
+        );
     }
 };
 
@@ -123,7 +142,9 @@ const parseUserAddresses = (input: string): string[] => {
         try {
             const parsed = JSON.parse(trimmed);
             if (Array.isArray(parsed)) {
-                const addresses = parsed.map((addr) => addr.toLowerCase().trim()).filter((addr) => addr.length > 0);
+                const addresses = parsed
+                    .map((addr) => addr.toLowerCase().trim())
+                    .filter((addr) => addr.length > 0);
                 // Validate each address
                 for (const addr of addresses) {
                     if (!isValidEthereumAddress(addr)) {
@@ -136,11 +157,16 @@ const parseUserAddresses = (input: string): string[] => {
             if (e instanceof Error && e.message.includes('Invalid Ethereum address')) {
                 throw e;
             }
-            throw new Error(`Invalid JSON format for USER_ADDRESSES: ${e instanceof Error ? e.message : String(e)}`);
+            throw new Error(
+                `Invalid JSON format for USER_ADDRESSES: ${e instanceof Error ? e.message : String(e)}`
+            );
         }
     }
     // Otherwise treat as comma-separated
-    const addresses = trimmed.split(',').map((addr) => addr.toLowerCase().trim()).filter((addr) => addr.length > 0);
+    const addresses = trimmed
+        .split(',')
+        .map((addr) => addr.toLowerCase().trim())
+        .filter((addr) => addr.length > 0);
     // Validate each address
     for (const addr of addresses) {
         if (!isValidEthereumAddress(addr)) {
@@ -156,7 +182,9 @@ const parseCopyStrategy = (): CopyStrategyConfig => {
     const hasLegacyConfig = process.env.COPY_PERCENTAGE && !process.env.COPY_STRATEGY;
 
     if (hasLegacyConfig) {
-        console.warn('⚠️  Using legacy COPY_PERCENTAGE configuration. Consider migrating to COPY_STRATEGY.');
+        console.warn(
+            '⚠️  Using legacy COPY_PERCENTAGE configuration. Consider migrating to COPY_STRATEGY.'
+        );
         const copyPercentage = parseFloat(process.env.COPY_PERCENTAGE || '10.0');
         const tradeMultiplier = parseFloat(process.env.TRADE_MULTIPLIER || '1.0');
         const effectivePercentage = copyPercentage * tradeMultiplier;
@@ -177,7 +205,8 @@ const parseCopyStrategy = (): CopyStrategyConfig => {
 
     // Parse new copy strategy configuration
     const strategyStr = (process.env.COPY_STRATEGY || 'PERCENTAGE').toUpperCase();
-    const strategy = CopyStrategy[strategyStr as keyof typeof CopyStrategy] || CopyStrategy.PERCENTAGE;
+    const strategy =
+        CopyStrategy[strategyStr as keyof typeof CopyStrategy] || CopyStrategy.PERCENTAGE;
 
     const config: CopyStrategyConfig = {
         strategy,
@@ -194,8 +223,12 @@ const parseCopyStrategy = (): CopyStrategyConfig => {
 
     // Add adaptive strategy parameters if applicable
     if (strategy === CopyStrategy.ADAPTIVE) {
-        config.adaptiveMinPercent = parseFloat(process.env.ADAPTIVE_MIN_PERCENT || config.copySize.toString());
-        config.adaptiveMaxPercent = parseFloat(process.env.ADAPTIVE_MAX_PERCENT || config.copySize.toString());
+        config.adaptiveMinPercent = parseFloat(
+            process.env.ADAPTIVE_MIN_PERCENT || config.copySize.toString()
+        );
+        config.adaptiveMaxPercent = parseFloat(
+            process.env.ADAPTIVE_MAX_PERCENT || config.copySize.toString()
+        );
         config.adaptiveThreshold = parseFloat(process.env.ADAPTIVE_THRESHOLD_USD || '500.0');
     }
 

@@ -13,7 +13,7 @@ const TRADE_MULTIPLIER = ENV.TRADE_MULTIPLIER;
 const COPY_PERCENTAGE = ENV.COPY_PERCENTAGE;
 
 // Polymarket minimum order sizes
-const MIN_ORDER_SIZE_USD = 1.0;   // Minimum order size in USD for BUY orders
+const MIN_ORDER_SIZE_USD = 1.0; // Minimum order size in USD for BUY orders
 const MIN_ORDER_SIZE_TOKENS = 1.0; // Minimum order size in tokens for SELL/MERGE orders
 
 const extractOrderError = (response: unknown): string | undefined => {
@@ -86,7 +86,9 @@ const postOrder = async (
 
         // Check minimum order size
         if (remaining < MIN_ORDER_SIZE_TOKENS) {
-            Logger.warning(`Position size (${remaining.toFixed(2)} tokens) too small to merge - skipping`);
+            Logger.warning(
+                `Position size (${remaining.toFixed(2)} tokens) too small to merge - skipping`
+            );
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
             return;
         }
@@ -127,14 +129,21 @@ const postOrder = async (
             const resp = await clobClient.postOrder(signedOrder, OrderType.FOK);
             if (resp.success === true) {
                 retry = 0;
-                Logger.orderResult(true, `Sold ${order_arges.amount} tokens at $${order_arges.price}`);
+                Logger.orderResult(
+                    true,
+                    `Sold ${order_arges.amount} tokens at $${order_arges.price}`
+                );
                 remaining -= order_arges.amount;
             } else {
                 const errorMessage = extractOrderError(resp);
                 if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
                     abortDueToFunds = true;
-                    Logger.warning(`Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`);
-                    Logger.warning('Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.');
+                    Logger.warning(
+                        `Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`
+                    );
+                    Logger.warning(
+                        'Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.'
+                    );
                     break;
                 }
                 retry += 1;
@@ -144,7 +153,10 @@ const postOrder = async (
             }
         }
         if (abortDueToFunds) {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
+            await UserActivity.updateOne(
+                { _id: trade._id },
+                { bot: true, botExcutedTime: RETRY_LIMIT }
+            );
             return;
         }
         if (retry >= RETRY_LIMIT) {
@@ -152,7 +164,8 @@ const postOrder = async (
         } else {
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
         }
-    } else if (condition === 'buy') {       //Buy strategy
+    } else if (condition === 'buy') {
+        //Buy strategy
         Logger.info('Executing BUY strategy...');
 
         Logger.info(`Your balance: $${my_balance.toFixed(2)}`);
@@ -209,8 +222,13 @@ const postOrder = async (
 
             // Check if remaining amount is below minimum before creating order
             if (remaining < MIN_ORDER_SIZE_USD) {
-                Logger.info(`Remaining amount ($${remaining.toFixed(2)}) below minimum - completing trade`);
-                await UserActivity.updateOne({ _id: trade._id }, { bot: true, myBoughtSize: totalBoughtTokens });
+                Logger.info(
+                    `Remaining amount ($${remaining.toFixed(2)}) below minimum - completing trade`
+                );
+                await UserActivity.updateOne(
+                    { _id: trade._id },
+                    { bot: true, myBoughtSize: totalBoughtTokens }
+                );
                 break;
             }
 
@@ -224,7 +242,9 @@ const postOrder = async (
                 price: parseFloat(minPriceAsk.price),
             };
 
-            Logger.info(`Creating order: $${orderSize.toFixed(2)} @ $${minPriceAsk.price} (Balance: $${my_balance.toFixed(2)})`);
+            Logger.info(
+                `Creating order: $${orderSize.toFixed(2)} @ $${minPriceAsk.price} (Balance: $${my_balance.toFixed(2)})`
+            );
             // Order args logged internally
             const signedOrder = await clobClient.createMarketOrder(order_arges);
             const resp = await clobClient.postOrder(signedOrder, OrderType.FOK);
@@ -232,14 +252,21 @@ const postOrder = async (
                 retry = 0;
                 const tokensBought = order_arges.amount / order_arges.price;
                 totalBoughtTokens += tokensBought;
-                Logger.orderResult(true, `Bought $${order_arges.amount.toFixed(2)} at $${order_arges.price} (${tokensBought.toFixed(2)} tokens)`);
+                Logger.orderResult(
+                    true,
+                    `Bought $${order_arges.amount.toFixed(2)} at $${order_arges.price} (${tokensBought.toFixed(2)} tokens)`
+                );
                 remaining -= order_arges.amount;
             } else {
                 const errorMessage = extractOrderError(resp);
                 if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
                     abortDueToFunds = true;
-                    Logger.warning(`Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`);
-                    Logger.warning('Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.');
+                    Logger.warning(
+                        `Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`
+                    );
+                    Logger.warning(
+                        'Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.'
+                    );
                     break;
                 }
                 retry += 1;
@@ -249,18 +276,29 @@ const postOrder = async (
             }
         }
         if (abortDueToFunds) {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT, myBoughtSize: totalBoughtTokens });
+            await UserActivity.updateOne(
+                { _id: trade._id },
+                { bot: true, botExcutedTime: RETRY_LIMIT, myBoughtSize: totalBoughtTokens }
+            );
             return;
         }
         if (retry >= RETRY_LIMIT) {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: retry, myBoughtSize: totalBoughtTokens });
+            await UserActivity.updateOne(
+                { _id: trade._id },
+                { bot: true, botExcutedTime: retry, myBoughtSize: totalBoughtTokens }
+            );
         } else {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true, myBoughtSize: totalBoughtTokens });
+            await UserActivity.updateOne(
+                { _id: trade._id },
+                { bot: true, myBoughtSize: totalBoughtTokens }
+            );
         }
 
         // Log the tracked purchase for later sell reference
         if (totalBoughtTokens > 0) {
-            Logger.info(`📝 Tracked purchase: ${totalBoughtTokens.toFixed(2)} tokens for future sell calculations`);
+            Logger.info(
+                `📝 Tracked purchase: ${totalBoughtTokens.toFixed(2)} tokens for future sell calculations`
+            );
         }
     } else if (condition === 'sell') {
         //Sell strategy
@@ -278,13 +316,18 @@ const postOrder = async (
             conditionId: trade.conditionId,
             side: 'BUY',
             bot: true,
-            myBoughtSize: { $exists: true, $gt: 0 }
+            myBoughtSize: { $exists: true, $gt: 0 },
         }).exec();
 
-        const totalBoughtTokens = previousBuys.reduce((sum, buy) => sum + (buy.myBoughtSize || 0), 0);
+        const totalBoughtTokens = previousBuys.reduce(
+            (sum, buy) => sum + (buy.myBoughtSize || 0),
+            0
+        );
 
         if (totalBoughtTokens > 0) {
-            Logger.info(`📊 Found ${previousBuys.length} previous purchases: ${totalBoughtTokens.toFixed(2)} tokens bought`);
+            Logger.info(
+                `📊 Found ${previousBuys.length} previous purchases: ${totalBoughtTokens.toFixed(2)} tokens bought`
+            );
         }
 
         if (!user_position) {
@@ -334,9 +377,7 @@ const postOrder = async (
             Logger.warning(
                 `❌ Cannot execute: Sell amount ${remaining.toFixed(2)} tokens below minimum (${MIN_ORDER_SIZE_TOKENS} token)`
             );
-            Logger.warning(
-                `💡 This happens when position sizes are too small or mismatched`
-            );
+            Logger.warning(`💡 This happens when position sizes are too small or mismatched`);
             await UserActivity.updateOne({ _id: trade._id }, { bot: true });
             return;
         }
@@ -370,7 +411,9 @@ const postOrder = async (
 
             // Check if remaining amount is below minimum before creating order
             if (remaining < MIN_ORDER_SIZE_TOKENS) {
-                Logger.info(`Remaining amount (${remaining.toFixed(2)} tokens) below minimum - completing trade`);
+                Logger.info(
+                    `Remaining amount (${remaining.toFixed(2)} tokens) below minimum - completing trade`
+                );
                 await UserActivity.updateOne({ _id: trade._id }, { bot: true });
                 break;
             }
@@ -379,7 +422,9 @@ const postOrder = async (
 
             // Final check: don't create orders below minimum
             if (sellAmount < MIN_ORDER_SIZE_TOKENS) {
-                Logger.info(`Order amount (${sellAmount.toFixed(2)} tokens) below minimum - completing trade`);
+                Logger.info(
+                    `Order amount (${sellAmount.toFixed(2)} tokens) below minimum - completing trade`
+                );
                 await UserActivity.updateOne({ _id: trade._id }, { bot: true });
                 break;
             }
@@ -396,14 +441,21 @@ const postOrder = async (
             if (resp.success === true) {
                 retry = 0;
                 totalSoldTokens += order_arges.amount;
-                Logger.orderResult(true, `Sold ${order_arges.amount} tokens at $${order_arges.price}`);
+                Logger.orderResult(
+                    true,
+                    `Sold ${order_arges.amount} tokens at $${order_arges.price}`
+                );
                 remaining -= order_arges.amount;
             } else {
                 const errorMessage = extractOrderError(resp);
                 if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
                     abortDueToFunds = true;
-                    Logger.warning(`Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`);
-                    Logger.warning('Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.');
+                    Logger.warning(
+                        `Order rejected: ${errorMessage || 'Insufficient balance or allowance'}`
+                    );
+                    Logger.warning(
+                        'Skipping remaining attempts. Top up funds or run `npm run check-allowance` before retrying.'
+                    );
                     break;
                 }
                 retry += 1;
@@ -425,11 +477,13 @@ const postOrder = async (
                         conditionId: trade.conditionId,
                         side: 'BUY',
                         bot: true,
-                        myBoughtSize: { $exists: true, $gt: 0 }
+                        myBoughtSize: { $exists: true, $gt: 0 },
                     },
                     { $set: { myBoughtSize: 0 } }
                 );
-                Logger.info(`🧹 Cleared purchase tracking (sold ${(sellPercentage * 100).toFixed(1)}% of position)`);
+                Logger.info(
+                    `🧹 Cleared purchase tracking (sold ${(sellPercentage * 100).toFixed(1)}% of position)`
+                );
             } else {
                 // Partial sell - reduce tracked purchases proportionally
                 for (const buy of previousBuys) {
@@ -439,12 +493,17 @@ const postOrder = async (
                         { $set: { myBoughtSize: newSize } }
                     );
                 }
-                Logger.info(`📝 Updated purchase tracking (sold ${(sellPercentage * 100).toFixed(1)}% of tracked position)`);
+                Logger.info(
+                    `📝 Updated purchase tracking (sold ${(sellPercentage * 100).toFixed(1)}% of tracked position)`
+                );
             }
         }
 
         if (abortDueToFunds) {
-            await UserActivity.updateOne({ _id: trade._id }, { bot: true, botExcutedTime: RETRY_LIMIT });
+            await UserActivity.updateOne(
+                { _id: trade._id },
+                { bot: true, botExcutedTime: RETRY_LIMIT }
+            );
             return;
         }
         if (retry >= RETRY_LIMIT) {

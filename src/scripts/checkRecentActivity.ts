@@ -39,7 +39,9 @@ const main = async () => {
     console.log('🛒 ПОКУПКИ ПОСЛЕ ПОГАШЕНИЯ (после 18:14 UTC 31 октября)');
     console.log('═══════════════════════════════════════════════════════════════\n');
 
-    const tradesAfterRedemption = activities.filter((t) => t.timestamp > redemptionEndTime && t.side === 'BUY');
+    const tradesAfterRedemption = activities.filter(
+        (t) => t.timestamp > redemptionEndTime && t.side === 'BUY'
+    );
 
     if (tradesAfterRedemption.length === 0) {
         console.log('✅ Покупок после погашения не было!\n');

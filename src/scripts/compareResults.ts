@@ -52,7 +52,7 @@ function loadSimulationResults(): SimulationResult[] {
         return [];
     }
 
-    const files = fs.readdirSync(resultsDir).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(resultsDir).filter((f) => f.endsWith('.json'));
 
     if (files.length === 0) {
         console.log(colors.yellow('No result files found in simulation_results/'));
@@ -90,16 +90,30 @@ function groupByTrader(results: SimulationResult[]): Map<string, SimulationResul
 }
 
 function printComparisonTable(results: SimulationResult[]) {
-    console.log(colors.bold(colors.cyan('\n════════════════════════════════════════════════════════════════════════════')));
+    console.log(
+        colors.bold(
+            colors.cyan(
+                '\n════════════════════════════════════════════════════════════════════════════'
+            )
+        )
+    );
     console.log(colors.bold(colors.cyan('  📊 SIMULATION RESULTS COMPARISON')));
-    console.log(colors.bold(colors.cyan('════════════════════════════════════════════════════════════════════════════\n')));
+    console.log(
+        colors.bold(
+            colors.cyan(
+                '════════════════════════════════════════════════════════════════════════════\n'
+            )
+        )
+    );
 
     console.log(colors.gray(`Total results found: ${results.length}\n`));
 
     const grouped = groupByTrader(results);
 
     for (const [trader, traderResults] of grouped.entries()) {
-        console.log(colors.bold(colors.blue(`\n▶ Trader: ${trader.slice(0, 10)}...${trader.slice(-8)}`)));
+        console.log(
+            colors.bold(colors.blue(`\n▶ Trader: ${trader.slice(0, 10)}...${trader.slice(-8)}`))
+        );
         console.log(colors.gray('─'.repeat(80)) + '\n');
 
         // Sort by ROI descending
@@ -114,10 +128,16 @@ function printComparisonTable(results: SimulationResult[]) {
         console.log(colors.gray('─'.repeat(80)));
 
         for (const result of sorted) {
-            const roiStr = result.roi >= 0 ? colors.green(`+${result.roi.toFixed(2)}%`) : colors.red(`${result.roi.toFixed(2)}%`);
-            const pnlStr = result.totalPnl >= 0 ? colors.green(`+$${result.totalPnl.toFixed(2)}`) : colors.red(`-$${Math.abs(result.totalPnl).toFixed(2)}`);
+            const roiStr =
+                result.roi >= 0
+                    ? colors.green(`+${result.roi.toFixed(2)}%`)
+                    : colors.red(`${result.roi.toFixed(2)}%`);
+            const pnlStr =
+                result.totalPnl >= 0
+                    ? colors.green(`+$${result.totalPnl.toFixed(2)}`)
+                    : colors.red(`-$${Math.abs(result.totalPnl).toFixed(2)}`);
             const tradesStr = `${result.copiedTrades}/${result.totalTrades}`;
-            const openPositions = result.positions.filter(p => !p.closed).length;
+            const openPositions = result.positions.filter((p) => !p.closed).length;
 
             const nameDisplay = result.name.padEnd(30).slice(0, 30);
             const roiDisplay = roiStr.padEnd(20); // Extra padding for color codes
@@ -125,11 +145,19 @@ function printComparisonTable(results: SimulationResult[]) {
             const tradesDisplay = tradesStr.padEnd(10);
             const posDisplay = String(openPositions).padEnd(10);
 
-            console.log(`${nameDisplay} | ${roiDisplay} | ${pnlDisplay} | ${tradesDisplay} | ${posDisplay}`);
+            console.log(
+                `${nameDisplay} | ${roiDisplay} | ${pnlDisplay} | ${tradesDisplay} | ${posDisplay}`
+            );
         }
     }
 
-    console.log(colors.bold(colors.cyan('\n════════════════════════════════════════════════════════════════════════════\n')));
+    console.log(
+        colors.bold(
+            colors.cyan(
+                '\n════════════════════════════════════════════════════════════════════════════\n'
+            )
+        )
+    );
 }
 
 function printBestResults(results: SimulationResult[], limit: number = 5) {
@@ -144,10 +172,16 @@ function printBestResults(results: SimulationResult[], limit: number = 5) {
 
         console.log(colors.bold(`${medal} ${result.name}`));
         console.log(colors.gray(`   Trader: ${result.traderAddress.slice(0, 10)}...`));
-        console.log(`   ROI: ${result.roi >= 0 ? colors.green(`+${result.roi.toFixed(2)}%`) : colors.red(`${result.roi.toFixed(2)}%`)}`);
-        console.log(`   P&L: ${result.totalPnl >= 0 ? colors.green(`+$${result.totalPnl.toFixed(2)}`) : colors.red(`-$${Math.abs(result.totalPnl).toFixed(2)}`)}`);
+        console.log(
+            `   ROI: ${result.roi >= 0 ? colors.green(`+${result.roi.toFixed(2)}%`) : colors.red(`${result.roi.toFixed(2)}%`)}`
+        );
+        console.log(
+            `   P&L: ${result.totalPnl >= 0 ? colors.green(`+$${result.totalPnl.toFixed(2)}`) : colors.red(`-$${Math.abs(result.totalPnl).toFixed(2)}`)}`
+        );
         console.log(`   Trades: ${result.copiedTrades} copied, ${result.skippedTrades} skipped`);
-        console.log(`   Capital: $${result.startingCapital.toFixed(2)} → $${result.currentCapital.toFixed(2)}`);
+        console.log(
+            `   Capital: $${result.startingCapital.toFixed(2)} → $${result.currentCapital.toFixed(2)}`
+        );
         console.log();
     }
 }
@@ -162,8 +196,12 @@ function printWorstResults(results: SimulationResult[], limit: number = 3) {
 
         console.log(colors.bold(`${i + 1}. ${result.name}`));
         console.log(colors.gray(`   Trader: ${result.traderAddress.slice(0, 10)}...`));
-        console.log(`   ROI: ${result.roi >= 0 ? colors.green(`+${result.roi.toFixed(2)}%`) : colors.red(`${result.roi.toFixed(2)}%`)}`);
-        console.log(`   P&L: ${result.totalPnl >= 0 ? colors.green(`+$${result.totalPnl.toFixed(2)}`) : colors.red(`-$${Math.abs(result.totalPnl).toFixed(2)}`)}`);
+        console.log(
+            `   ROI: ${result.roi >= 0 ? colors.green(`+${result.roi.toFixed(2)}%`) : colors.red(`${result.roi.toFixed(2)}%`)}`
+        );
+        console.log(
+            `   P&L: ${result.totalPnl >= 0 ? colors.green(`+$${result.totalPnl.toFixed(2)}`) : colors.red(`-$${Math.abs(result.totalPnl).toFixed(2)}`)}`
+        );
         console.log(`   Trades: ${result.copiedTrades} copied, ${result.skippedTrades} skipped`);
         console.log();
     }
@@ -176,15 +214,23 @@ function printStatistics(results: SimulationResult[]) {
     const avgPnl = results.reduce((sum, r) => sum + r.totalPnl, 0) / results.length;
     const totalTradesCopied = results.reduce((sum, r) => sum + r.copiedTrades, 0);
     const totalTradesSkipped = results.reduce((sum, r) => sum + r.skippedTrades, 0);
-    const positiveResults = results.filter(r => r.roi > 0).length;
-    const negativeResults = results.filter(r => r.roi < 0).length;
+    const positiveResults = results.filter((r) => r.roi > 0).length;
+    const negativeResults = results.filter((r) => r.roi < 0).length;
 
     console.log(`Total simulations: ${colors.yellow(String(results.length))}`);
-    console.log(`Profitable: ${colors.green(String(positiveResults))} (${((positiveResults / results.length) * 100).toFixed(1)}%)`);
-    console.log(`Unprofitable: ${colors.red(String(negativeResults))} (${((negativeResults / results.length) * 100).toFixed(1)}%)`);
+    console.log(
+        `Profitable: ${colors.green(String(positiveResults))} (${((positiveResults / results.length) * 100).toFixed(1)}%)`
+    );
+    console.log(
+        `Unprofitable: ${colors.red(String(negativeResults))} (${((negativeResults / results.length) * 100).toFixed(1)}%)`
+    );
     console.log();
-    console.log(`Average ROI: ${avgROI >= 0 ? colors.green(`+${avgROI.toFixed(2)}%`) : colors.red(`${avgROI.toFixed(2)}%`)}`);
-    console.log(`Average P&L: ${avgPnl >= 0 ? colors.green(`+$${avgPnl.toFixed(2)}`) : colors.red(`-$${Math.abs(avgPnl).toFixed(2)}`)}`);
+    console.log(
+        `Average ROI: ${avgROI >= 0 ? colors.green(`+${avgROI.toFixed(2)}%`) : colors.red(`${avgROI.toFixed(2)}%`)}`
+    );
+    console.log(
+        `Average P&L: ${avgPnl >= 0 ? colors.green(`+$${avgPnl.toFixed(2)}`) : colors.red(`-$${Math.abs(avgPnl).toFixed(2)}`)}`
+    );
     console.log();
     console.log(`Total trades copied: ${colors.cyan(String(totalTradesCopied))}`);
     console.log(`Total trades skipped: ${colors.yellow(String(totalTradesSkipped))}`);
@@ -192,9 +238,21 @@ function printStatistics(results: SimulationResult[]) {
 }
 
 function printDetailedResult(result: SimulationResult) {
-    console.log(colors.bold(colors.cyan('\n════════════════════════════════════════════════════════════════════════════')));
+    console.log(
+        colors.bold(
+            colors.cyan(
+                '\n════════════════════════════════════════════════════════════════════════════'
+            )
+        )
+    );
     console.log(colors.bold(colors.cyan('  📋 DETAILED RESULT')));
-    console.log(colors.bold(colors.cyan('════════════════════════════════════════════════════════════════════════════\n')));
+    console.log(
+        colors.bold(
+            colors.cyan(
+                '════════════════════════════════════════════════════════════════════════════\n'
+            )
+        )
+    );
 
     console.log(colors.bold('Configuration:'));
     console.log(`  Name: ${colors.yellow(result.name)}`);
@@ -213,8 +271,12 @@ function printDetailedResult(result: SimulationResult) {
     console.log(colors.bold('Performance:'));
     const pnlColor = result.totalPnl >= 0 ? colors.green : colors.red;
     const roiColor = result.roi >= 0 ? colors.green : colors.red;
-    console.log(`  Total P&L:     ${pnlColor((result.totalPnl >= 0 ? '+' : '') + '$' + result.totalPnl.toFixed(2))}`);
-    console.log(`  ROI:           ${roiColor((result.roi >= 0 ? '+' : '') + result.roi.toFixed(2) + '%')}`);
+    console.log(
+        `  Total P&L:     ${pnlColor((result.totalPnl >= 0 ? '+' : '') + '$' + result.totalPnl.toFixed(2))}`
+    );
+    console.log(
+        `  ROI:           ${roiColor((result.roi >= 0 ? '+' : '') + result.roi.toFixed(2) + '%')}`
+    );
     console.log(`  Realized:      $${result.realizedPnl.toFixed(2)}`);
     console.log(`  Unrealized:    $${result.unrealizedPnl.toFixed(2)}`);
     console.log();
@@ -223,11 +285,13 @@ function printDetailedResult(result: SimulationResult) {
     console.log(`  Total trades:    ${colors.cyan(String(result.totalTrades))}`);
     console.log(`  Copied:          ${colors.green(String(result.copiedTrades))}`);
     console.log(`  Skipped:         ${colors.yellow(String(result.skippedTrades))}`);
-    console.log(`  Copy rate:       ${((result.copiedTrades / result.totalTrades) * 100).toFixed(1)}%`);
+    console.log(
+        `  Copy rate:       ${((result.copiedTrades / result.totalTrades) * 100).toFixed(1)}%`
+    );
     console.log();
 
-    const openPositions = result.positions.filter(p => !p.closed);
-    const closedPositions = result.positions.filter(p => p.closed);
+    const openPositions = result.positions.filter((p) => !p.closed);
+    const closedPositions = result.positions.filter((p) => p.closed);
 
     console.log(colors.bold('Positions:'));
     console.log(`  Open:   ${colors.cyan(String(openPositions.length))}`);
@@ -240,7 +304,9 @@ async function main() {
     const results = loadSimulationResults();
 
     if (results.length === 0) {
-        console.log(colors.yellow('\nNo simulation results to compare. Run simulations first with:'));
+        console.log(
+            colors.yellow('\nNo simulation results to compare. Run simulations first with:')
+        );
         console.log(colors.cyan('  npm run sim\n'));
         return;
     }
@@ -277,7 +343,7 @@ async function main() {
                 return;
             }
 
-            const found = results.find(r => r.name.includes(searchName));
+            const found = results.find((r) => r.name.includes(searchName));
             if (!found) {
                 console.log(colors.red(`No result found matching: ${searchName}`));
                 return;
@@ -304,18 +370,32 @@ function printHelp() {
     console.log(colors.cyan('\n📊 Simulation Results Comparison - Usage\n'));
 
     console.log('Commands:');
-    console.log(colors.yellow('  npm run compare              ') + colors.gray('# Show all results'));
-    console.log(colors.yellow('  npm run compare best [N]     ') + colors.gray('# Show top N results (default: 10)'));
-    console.log(colors.yellow('  npm run compare worst [N]    ') + colors.gray('# Show worst N results (default: 5)'));
-    console.log(colors.yellow('  npm run compare stats        ') + colors.gray('# Show aggregate statistics'));
-    console.log(colors.yellow('  npm run compare detail <name>') + colors.gray('# Show detailed info for a result\n'));
+    console.log(
+        colors.yellow('  npm run compare              ') + colors.gray('# Show all results')
+    );
+    console.log(
+        colors.yellow('  npm run compare best [N]     ') +
+            colors.gray('# Show top N results (default: 10)')
+    );
+    console.log(
+        colors.yellow('  npm run compare worst [N]    ') +
+            colors.gray('# Show worst N results (default: 5)')
+    );
+    console.log(
+        colors.yellow('  npm run compare stats        ') +
+            colors.gray('# Show aggregate statistics')
+    );
+    console.log(
+        colors.yellow('  npm run compare detail <name>') +
+            colors.gray('# Show detailed info for a result\n')
+    );
 
     console.log('Examples:');
     console.log(colors.gray('  npm run compare best 5'));
     console.log(colors.gray('  npm run compare detail std_m2p0\n'));
 }
 
-main().catch(error => {
+main().catch((error) => {
     console.error(colors.red('Error:'), error);
     process.exit(1);
 });

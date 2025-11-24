@@ -11,7 +11,7 @@
 export enum CopyStrategy {
     PERCENTAGE = 'PERCENTAGE',
     FIXED = 'FIXED',
-    ADAPTIVE = 'ADAPTIVE'
+    ADAPTIVE = 'ADAPTIVE',
 }
 
 export interface CopyStrategyConfig {
@@ -25,26 +25,26 @@ export interface CopyStrategyConfig {
     copySize: number;
 
     // Adaptive strategy parameters (only used if strategy = ADAPTIVE)
-    adaptiveMinPercent?: number;    // Minimum percentage for large orders
-    adaptiveMaxPercent?: number;    // Maximum percentage for small orders
-    adaptiveThreshold?: number;     // Threshold in USD to trigger adaptation
+    adaptiveMinPercent?: number; // Minimum percentage for large orders
+    adaptiveMaxPercent?: number; // Maximum percentage for small orders
+    adaptiveThreshold?: number; // Threshold in USD to trigger adaptation
 
     // Safety limits
-    maxOrderSizeUSD: number;        // Maximum size for a single order
-    minOrderSizeUSD: number;        // Minimum size for a single order
-    maxPositionSizeUSD?: number;    // Maximum total size for a position (optional)
-    maxDailyVolumeUSD?: number;     // Maximum total volume per day (optional)
+    maxOrderSizeUSD: number; // Maximum size for a single order
+    minOrderSizeUSD: number; // Minimum size for a single order
+    maxPositionSizeUSD?: number; // Maximum total size for a position (optional)
+    maxDailyVolumeUSD?: number; // Maximum total volume per day (optional)
 }
 
 export interface OrderSizeCalculation {
-    traderOrderSize: number;        // Original trader's order size
-    baseAmount: number;             // Calculated amount before limits
-    finalAmount: number;            // Final amount after applying limits
-    strategy: CopyStrategy;         // Strategy used
-    cappedByMax: boolean;           // Whether capped by MAX_ORDER_SIZE
-    reducedByBalance: boolean;      // Whether reduced due to balance
-    belowMinimum: boolean;          // Whether below minimum threshold
-    reasoning: string;              // Human-readable explanation
+    traderOrderSize: number; // Original trader's order size
+    baseAmount: number; // Calculated amount before limits
+    finalAmount: number; // Final amount after applying limits
+    strategy: CopyStrategy; // Strategy used
+    cappedByMax: boolean; // Whether capped by MAX_ORDER_SIZE
+    reducedByBalance: boolean; // Whether reduced due to balance
+    belowMinimum: boolean; // Whether below minimum threshold
+    reasoning: string; // Human-readable explanation
 }
 
 /**
@@ -72,10 +72,7 @@ export function calculateOrderSize(
             break;
 
         case CopyStrategy.ADAPTIVE:
-            const adaptivePercent = calculateAdaptivePercent(
-                config,
-                traderOrderSize
-            );
+            const adaptivePercent = calculateAdaptivePercent(config, traderOrderSize);
             baseAmount = traderOrderSize * (adaptivePercent / 100);
             reasoning = `Adaptive ${adaptivePercent.toFixed(1)}% of trader's $${traderOrderSize.toFixed(2)} = $${baseAmount.toFixed(2)}`;
             break;
@@ -134,7 +131,7 @@ export function calculateOrderSize(
         cappedByMax,
         reducedByBalance,
         belowMinimum,
-        reasoning
+        reasoning,
     };
 }
 
@@ -146,10 +143,7 @@ export function calculateOrderSize(
  * - Large orders (> threshold): Use lower percentage (down to minPercent)
  * - Medium orders: Linear interpolation between copySize and min/max
  */
-function calculateAdaptivePercent(
-    config: CopyStrategyConfig,
-    traderOrderSize: number
-): number {
+function calculateAdaptivePercent(config: CopyStrategyConfig, traderOrderSize: number): number {
     const minPercent = config.adaptiveMinPercent ?? config.copySize;
     const maxPercent = config.adaptiveMaxPercent ?? config.copySize;
     const threshold = config.adaptiveThreshold ?? 500;
@@ -230,7 +224,7 @@ export function getRecommendedConfig(balanceUSD: number): CopyStrategyConfig {
             maxOrderSizeUSD: 20.0,
             minOrderSizeUSD: 1.0,
             maxPositionSizeUSD: 50.0,
-            maxDailyVolumeUSD: 100.0
+            maxDailyVolumeUSD: 100.0,
         };
     } else if (balanceUSD < 2000) {
         // Medium balance: Balanced
@@ -240,7 +234,7 @@ export function getRecommendedConfig(balanceUSD: number): CopyStrategyConfig {
             maxOrderSizeUSD: 50.0,
             minOrderSizeUSD: 1.0,
             maxPositionSizeUSD: 200.0,
-            maxDailyVolumeUSD: 500.0
+            maxDailyVolumeUSD: 500.0,
         };
     } else {
         // Large balance: Adaptive
@@ -253,7 +247,7 @@ export function getRecommendedConfig(balanceUSD: number): CopyStrategyConfig {
             maxOrderSizeUSD: 100.0,
             minOrderSizeUSD: 1.0,
             maxPositionSizeUSD: 1000.0,
-            maxDailyVolumeUSD: 2000.0
+            maxDailyVolumeUSD: 2000.0,
         };
     }
 }

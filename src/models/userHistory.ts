@@ -76,4 +76,3 @@ const getUserActivityModel = (walletAddress: string) => {
 };
 
 export { getUserActivityModel, getUserPositionModel };
-

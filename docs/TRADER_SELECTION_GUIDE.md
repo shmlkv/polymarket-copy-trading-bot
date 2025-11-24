@@ -20,12 +20,14 @@ Selecting the right traders to copy is crucial for success. This guide covers:
 **Why it matters:** Shows the worst-case scenario - how much you could lose from a peak.
 
 **Good values:**
+
 - Excellent: < 10%
 - Good: 10-20%
 - Acceptable: 20-30%
 - Risky: > 30%
 
 **Example:**
+
 - Starting capital: $1,000
 - Peak equity: $1,200
 - Lowest point: $1,000
@@ -40,12 +42,14 @@ Selecting the right traders to copy is crucial for success. This guide covers:
 **Why it matters:** A high ROI means nothing if it comes with extreme volatility. Sharpe Ratio balances both.
 
 **Good values:**
+
 - Excellent: > 2.0
 - Good: 1.5 - 2.0
 - Acceptable: 1.0 - 1.5
 - Poor: < 1.0
 
 **Example:**
+
 - Trader A: 20% ROI, Sharpe 0.8 (high risk)
 - Trader B: 15% ROI, Sharpe 2.5 (low risk)
 - **Choose Trader B** - better risk-adjusted return
@@ -57,6 +61,7 @@ Selecting the right traders to copy is crucial for success. This guide covers:
 **Why it matters:** Shows return efficiency relative to worst-case loss.
 
 **Good values:**
+
 - Excellent: > 3.0
 - Good: 2.0 - 3.0
 - Acceptable: 1.0 - 2.0
@@ -68,6 +73,7 @@ Selecting the right traders to copy is crucial for success. This guide covers:
 **Why it matters:** Lower volatility = more consistent, predictable returns.
 
 **Good values:**
+
 - Excellent: < 2% daily
 - Good: 2-4% daily
 - Risky: > 4% daily
@@ -79,6 +85,7 @@ Selecting the right traders to copy is crucial for success. This guide covers:
 **What it is:** Total return percentage over the period.
 
 **Good values:**
+
 - Excellent: > 30%
 - Good: 15-30%
 - Acceptable: 5-15%
@@ -88,6 +95,7 @@ Selecting the right traders to copy is crucial for success. This guide covers:
 **What it is:** Percentage of profitable trades.
 
 **Good values:**
+
 - Excellent: > 65%
 - Good: 55-65%
 - Acceptable: 50-55%
@@ -97,6 +105,7 @@ Selecting the right traders to copy is crucial for success. This guide covers:
 **What it is:** Gross profit / Gross loss
 
 **Good values:**
+
 - Excellent: > 2.0
 - Good: 1.5 - 2.0
 - Acceptable: 1.0 - 1.5
@@ -143,6 +152,7 @@ npm run find-low-risk 0xaddress1 0xaddress2
 ```
 
 This finds traders with:
+
 - At least 10% ROI
 - Sharpe Ratio >= 2.0 (excellent risk-adjusted returns)
 - Maximum Drawdown <= 10% (very low risk)
@@ -161,6 +171,7 @@ npm run find-low-risk 0xaddress1 0xaddress2
 ### Recommended Filters
 
 **For Conservative Investors:**
+
 - ROI >= 10%
 - Sharpe Ratio >= 2.0
 - MDD <= 10%
@@ -168,6 +179,7 @@ npm run find-low-risk 0xaddress1 0xaddress2
 - Trading Days >= 60
 
 **For Balanced Investors:**
+
 - ROI >= 15%
 - Sharpe Ratio >= 1.5
 - MDD <= 20%
@@ -175,6 +187,7 @@ npm run find-low-risk 0xaddress1 0xaddress2
 - Trading Days >= 30
 
 **For Aggressive Investors:**
+
 - ROI >= 20%
 - Sharpe Ratio >= 1.0
 - MDD <= 30%
@@ -195,12 +208,14 @@ npm run find-low-risk 0xaddress1 0xaddress2
 ### Risk Score
 
 The tool calculates a **Risk Score (0-100, lower is better)** based on:
+
 - Maximum Drawdown (40% weight)
 - Sharpe Ratio (30% weight)
 - Volatility (20% weight)
 - Win Rate (10% weight)
 
 **Interpretation:**
+
 - 0-30: Excellent (low risk)
 - 30-50: Good
 - 50-70: Average
@@ -219,6 +234,7 @@ The tool calculates a **Risk Score (0-100, lower is better)** based on:
 ### 1. Diversify
 
 Don't copy just one trader. Select 3-5 traders with different:
+
 - Strategies
 - Market focuses
 - Risk profiles
@@ -226,6 +242,7 @@ Don't copy just one trader. Select 3-5 traders with different:
 ### 2. Regular Review
 
 Re-evaluate traders monthly:
+
 - Check if metrics are still good
 - Remove underperformers
 - Add new promising traders
@@ -233,6 +250,7 @@ Re-evaluate traders monthly:
 ### 3. Start Small
 
 When adding a new trader:
+
 - Start with small allocation
 - Monitor for 1-2 weeks
 - Scale up if performance is good
@@ -240,6 +258,7 @@ When adding a new trader:
 ### 4. Monitor Drawdowns
 
 Watch for:
+
 - Increasing MDD
 - Decreasing Sharpe Ratio
 - Declining win rate
@@ -247,6 +266,7 @@ Watch for:
 ### 5. Check Activity
 
 Ensure traders are:
+
 - Still actively trading
 - Not changing strategy drastically
 - Maintaining performance
@@ -254,31 +274,35 @@ Ensure traders are:
 ## Example Workflow
 
 1. **Find Candidates:**
-   ```bash
-   # Get list from Polymarket leaderboard
-   # Or use known good traders
-   ```
+
+    ```bash
+    # Get list from Polymarket leaderboard
+    # Or use known good traders
+    ```
 
 2. **Analyze:**
-   ```bash
-   npm run find-low-risk 0xaddr1 0xaddr2 0xaddr3
-   ```
+
+    ```bash
+    npm run find-low-risk 0xaddr1 0xaddr2 0xaddr3
+    ```
 
 3. **Review Results:**
-   - Check risk scores
-   - Verify metrics meet your criteria
-   - Review trading history
+
+    - Check risk scores
+    - Verify metrics meet your criteria
+    - Review trading history
 
 4. **Add to Bot:**
-   ```bash
-   # Update .env
-   USER_ADDRESSES='0xaddr1, 0xaddr2, 0xaddr3'
-   ```
+
+    ```bash
+    # Update .env
+    USER_ADDRESSES='0xaddr1, 0xaddr2, 0xaddr3'
+    ```
 
 5. **Monitor:**
-   - Check bot logs daily
-   - Review performance weekly
-   - Re-analyze monthly
+    - Check bot logs daily
+    - Review performance weekly
+    - Re-analyze monthly
 
 ## Advanced: Custom Analysis
 
@@ -308,17 +332,19 @@ const customFilter = (trader: TraderAnalysis) => {
 ## Troubleshooting
 
 **No traders found matching criteria:**
+
 - Relax thresholds (lower MIN_SHARPE_THRESHOLD, increase MAX_MDD_THRESHOLD)
 - Check if traders have enough trading history
 - Verify trader addresses are correct
 
 **Analysis takes too long:**
+
 - Reduce SIM_HISTORY_DAYS
 - Analyze fewer traders at once
 - Check API rate limits
 
 **Results seem inaccurate:**
+
 - Increase MIN_TRADER_TRADES for more data
 - Increase MIN_TRADING_DAYS for longer history
 - Verify current position prices are accurate
-

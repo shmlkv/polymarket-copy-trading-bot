@@ -3,15 +3,18 @@
 ## Changes Made
 
 ### 1. Centralized Constants (Lines 10-12)
+
 **Problem:** `MIN_ORDER_SIZE` was declared 3 times in different places with unclear units.
 
 **Solution:**
+
 ```typescript
-const MIN_ORDER_SIZE_USD = 1.0;   // Minimum order size in USD for BUY orders
+const MIN_ORDER_SIZE_USD = 1.0; // Minimum order size in USD for BUY orders
 const MIN_ORDER_SIZE_TOKENS = 1.0; // Minimum order size in tokens for SELL/MERGE orders
 ```
 
 **Benefits:**
+
 - Clear distinction between USD and token minimums
 - Single source of truth
 - Easier to maintain
@@ -19,7 +22,9 @@ const MIN_ORDER_SIZE_TOKENS = 1.0; // Minimum order size in tokens for SELL/MERG
 ---
 
 ### 2. Removed Duplicate Balance Check in BUY Strategy
+
 **Problem:** Two conflicting balance checks:
+
 - Line 196: `if (remaining > my_balance * 0.99)` → adjust to 99%
 - Line 241: `if (orderSize > my_balance * 0.95)` → skip trade at 95%
 
@@ -28,6 +33,7 @@ const MIN_ORDER_SIZE_TOKENS = 1.0; // Minimum order size in tokens for SELL/MERG
 **Solution:** Removed the 95% check. The 99% safety buffer is sufficient.
 
 **Benefits:**
+
 - No conflicting logic
 - More trades can execute successfully
 - Consistent behavior
@@ -35,9 +41,11 @@ const MIN_ORDER_SIZE_TOKENS = 1.0; // Minimum order size in tokens for SELL/MERG
 ---
 
 ### 3. Added Minimum Order Check in SELL Trading Loop (Lines 356-371)
+
 **Problem:** SELL could create orders below minimum if order book bid was smaller than remaining amount.
 
 **Example:**
+
 ```
 Remaining: 1.5 tokens ✓ (passes initial check)
 Order book bid: 0.3 tokens
@@ -45,6 +53,7 @@ Order created: 0.3 tokens ❌ (below minimum!)
 ```
 
 **Solution:** Added two checks in trading loop:
+
 ```typescript
 // Check remaining before processing
 if (remaining < MIN_ORDER_SIZE_TOKENS) {
@@ -61,6 +70,7 @@ if (sellAmount < MIN_ORDER_SIZE_TOKENS) {
 ```
 
 **Benefits:**
+
 - Never creates orders below Polymarket minimum
 - Graceful completion with logging
 - Consistent with BUY strategy pattern
@@ -68,16 +78,23 @@ if (sellAmount < MIN_ORDER_SIZE_TOKENS) {
 ---
 
 ### 4. Simplified SELL Order Logic (Lines 363-378)
+
 **Before:**
+
 ```typescript
 if (remaining <= parseFloat(maxPriceBid.size)) {
-    order_arges = { /* remaining */ };
+    order_arges = {
+        /* remaining */
+    };
 } else {
-    order_arges = { /* maxPriceBid.size */ };
+    order_arges = {
+        /* maxPriceBid.size */
+    };
 }
 ```
 
 **After:**
+
 ```typescript
 const sellAmount = Math.min(remaining, parseFloat(maxPriceBid.size));
 order_arges = {
@@ -89,6 +106,7 @@ order_arges = {
 ```
 
 **Benefits:**
+
 - Cleaner, more readable code
 - Same logic, less duplication
 - Easier to add checks before order creation
@@ -124,35 +142,38 @@ order_arges = {
 Before deploying to production:
 
 1. **Test BUY with balance near limit:**
-   - Your balance: $100
-   - Trade size after multiplier: $95-99
-   - Expected: Should execute successfully
+
+    - Your balance: $100
+    - Trade size after multiplier: $95-99
+    - Expected: Should execute successfully
 
 2. **Test SELL with small order book:**
-   - Remaining: 2 tokens
-   - Best bid: 0.5 tokens
-   - Expected: Should skip with "Order amount below minimum" message
+
+    - Remaining: 2 tokens
+    - Best bid: 0.5 tokens
+    - Expected: Should skip with "Order amount below minimum" message
 
 3. **Monitor logs for new messages:**
-   - `Remaining amount (X tokens) below minimum - completing trade`
-   - `Order amount (X tokens) below minimum - completing trade`
+    - `Remaining amount (X tokens) below minimum - completing trade`
+    - `Order amount (X tokens) below minimum - completing trade`
 
 ---
 
 ## Files Modified
 
 - `/src/utils/postOrder.ts` - All improvements in single file
-  - Lines 10-12: Added constants
-  - Lines 83, 167, 176, 181, 200, 229, 320, 357, 367: Updated to use named constants
-  - Lines 241-245: Removed duplicate balance check
-  - Lines 356-371: Added minimum checks in SELL loop
-  - Lines 363-378: Simplified SELL order creation
+    - Lines 10-12: Added constants
+    - Lines 83, 167, 176, 181, 200, 229, 320, 357, 367: Updated to use named constants
+    - Lines 241-245: Removed duplicate balance check
+    - Lines 356-371: Added minimum checks in SELL loop
+    - Lines 363-378: Simplified SELL order creation
 
 ---
 
 ## Backward Compatibility
 
 ✅ **All changes are backward compatible:**
+
 - Same minimum values (1.0 USD / 1.0 tokens)
 - Same business logic
 - Same API

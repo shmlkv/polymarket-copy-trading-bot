@@ -88,14 +88,19 @@ const updatePolymarketCache = async (clobClient: ClobClient, tokenId: string) =>
     }
 };
 
-const sellEntirePosition = async (clobClient: ClobClient, position: Position): Promise<SellResult> => {
+const sellEntirePosition = async (
+    clobClient: ClobClient,
+    position: Position
+): Promise<SellResult> => {
     let remaining = position.size;
     let attempts = 0;
     let soldTokens = 0;
     let proceedsUsd = 0;
 
     if (remaining < MIN_SELL_TOKENS) {
-        console.log(`   ❌ Position size ${remaining.toFixed(4)} < ${MIN_SELL_TOKENS} token minimum, skipping`);
+        console.log(
+            `   ❌ Position size ${remaining.toFixed(4)} < ${MIN_SELL_TOKENS} token minimum, skipping`
+        );
         return { soldTokens: 0, proceedsUsd: 0, remainingTokens: remaining };
     }
 
@@ -117,7 +122,9 @@ const sellEntirePosition = async (clobClient: ClobClient, position: Position): P
         const bidPrice = parseFloat(bestBid.price);
 
         if (bidSize < MIN_SELL_TOKENS) {
-            console.log(`   ❌ Best bid only for ${bidSize.toFixed(2)} tokens (< ${MIN_SELL_TOKENS})`);
+            console.log(
+                `   ❌ Best bid only for ${bidSize.toFixed(2)} tokens (< ${MIN_SELL_TOKENS})`
+            );
             break;
         }
 
@@ -145,16 +152,22 @@ const sellEntirePosition = async (clobClient: ClobClient, position: Position): P
                 proceedsUsd += tradeValue;
                 remaining -= sellAmount;
                 attempts = 0;
-                console.log(`   ✅ Sold ${sellAmount.toFixed(2)} tokens @ $${bidPrice.toFixed(3)} (≈ $${tradeValue.toFixed(2)})`);
+                console.log(
+                    `   ✅ Sold ${sellAmount.toFixed(2)} tokens @ $${bidPrice.toFixed(3)} (≈ $${tradeValue.toFixed(2)})`
+                );
             } else {
                 attempts += 1;
                 const errorMessage = extractOrderError(resp);
 
                 if (isInsufficientBalanceOrAllowanceError(errorMessage)) {
-                    console.log(`   ❌ Order rejected: ${errorMessage ?? 'balance/allowance issue'}`);
+                    console.log(
+                        `   ❌ Order rejected: ${errorMessage ?? 'balance/allowance issue'}`
+                    );
                     break;
                 }
-                console.log(`   ⚠️  Sell attempt ${attempts}/${RETRY_LIMIT} failed${errorMessage ? ` – ${errorMessage}` : ''}`);
+                console.log(
+                    `   ⚠️  Sell attempt ${attempts}/${RETRY_LIMIT} failed${errorMessage ? ` – ${errorMessage}` : ''}`
+                );
             }
         } catch (error) {
             attempts += 1;
@@ -165,7 +178,9 @@ const sellEntirePosition = async (clobClient: ClobClient, position: Position): P
     if (remaining >= MIN_SELL_TOKENS) {
         console.log(`   ⚠️  Remaining unsold: ${remaining.toFixed(2)} tokens`);
     } else if (remaining > 0) {
-        console.log(`   ℹ️  Residual dust < ${MIN_SELL_TOKENS} token left (${remaining.toFixed(4)})`);
+        console.log(
+            `   ℹ️  Residual dust < ${MIN_SELL_TOKENS} token left (${remaining.toFixed(4)})`
+        );
     }
 
     return { soldTokens, proceedsUsd, remainingTokens: remaining };
@@ -202,8 +217,12 @@ const logPositionHeader = (position: Position, index: number, total: number) => 
     if (position.outcome) {
         console.log(`   Outcome: ${position.outcome}`);
     }
-    console.log(`   Size: ${position.size.toFixed(2)} tokens @ avg $${position.avgPrice.toFixed(3)}`);
-    console.log(`   Est. value: $${position.currentValue.toFixed(2)} (cur price $${position.curPrice.toFixed(3)})`);
+    console.log(
+        `   Size: ${position.size.toFixed(2)} tokens @ avg $${position.avgPrice.toFixed(3)}`
+    );
+    console.log(
+        `   Est. value: $${position.currentValue.toFixed(2)} (cur price $${position.curPrice.toFixed(3)})`
+    );
     if (position.redeemable) {
         console.log('   ℹ️  Market is redeemable — consider redeeming if value stays flat at $0.');
     }
@@ -217,14 +236,19 @@ const main = async () => {
     const clobClient = await createClobClient();
     console.log('✅ Connected to Polymarket CLOB');
 
-    const [myPositions, trackedPositions] = await Promise.all([loadPositions(PROXY_WALLET), buildTrackedSet()]);
+    const [myPositions, trackedPositions] = await Promise.all([
+        loadPositions(PROXY_WALLET),
+        buildTrackedSet(),
+    ]);
 
     if (myPositions.length === 0) {
         console.log('\n🎉 No open positions detected for proxy wallet.');
         return;
     }
 
-    const stalePositions = myPositions.filter((pos) => !trackedPositions.has(`${pos.conditionId}:${pos.asset}`));
+    const stalePositions = myPositions.filter(
+        (pos) => !trackedPositions.has(`${pos.conditionId}:${pos.asset}`)
+    );
 
     if (stalePositions.length === 0) {
         console.log('\n✅ All positions still held by tracked traders. Nothing to close.');

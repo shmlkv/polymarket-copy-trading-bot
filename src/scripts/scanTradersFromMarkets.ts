@@ -151,12 +151,12 @@ async function validateAddressesBatch(addresses: string[]): Promise<string[]> {
         });
 
         const results = await Promise.all(promises);
-        results.forEach(addr => {
+        results.forEach((addr) => {
             if (addr) validAddresses.push(addr);
         });
 
         // Small delay between batches
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     return validAddresses;
@@ -181,7 +181,8 @@ async function extractTradersFromMarkets(markets: any[]): Promise<string[]> {
                 // Get all token IDs for this market
                 const tokens = market.tokens || [];
 
-                for (const token of tokens.slice(0, 2)) { // Max 2 tokens per market
+                for (const token of tokens.slice(0, 2)) {
+                    // Max 2 tokens per market
                     const tokenId = token.token_id || token.tokenId;
 
                     if (tokenId) {
@@ -222,19 +223,22 @@ async function extractTradersFromMarkets(markets: any[]): Promise<string[]> {
         });
 
         const results = await Promise.all(promises);
-        results.flat().forEach(addr => traders.add(addr));
+        results.flat().forEach((addr) => traders.add(addr));
 
         console.log(c.gray(`    Found ${traders.size} potential traders so far...`));
 
         // Small delay between chunks
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
     return Array.from(traders);
 }
 
 // Aggressive network expansion from a trader
-async function expandNetworkFromTrader(traderAddress: string, depth: number = 200): Promise<string[]> {
+async function expandNetworkFromTrader(
+    traderAddress: string,
+    depth: number = 200
+): Promise<string[]> {
     try {
         const response = await axios.get(
             `https://data-api.polymarket.com/activity?user=${traderAddress}&type=TRADE&limit=${depth}`,
@@ -262,7 +266,9 @@ async function expandNetworkFromTrader(traderAddress: string, depth: number = 20
 
 async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
     console.log(c.cyan('🔍 MASS DISCOVERY MODE - Finding thousands of traders...'));
-    console.log(c.gray(`  Target: ${TARGET_DISCOVERY_COUNT} traders | Rounds: ${MAX_DISCOVERY_ROUNDS}\n`));
+    console.log(
+        c.gray(`  Target: ${TARGET_DISCOVERY_COUNT} traders | Rounds: ${MAX_DISCOVERY_ROUNDS}\n`)
+    );
 
     const discoveredTraders = new Set<string>();
 
@@ -276,7 +282,10 @@ async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
                 `https://gamma-api.polymarket.com/markets?limit=${MAX_MARKETS_TO_SCAN}&closed=false`,
                 {
                     timeout: 15000,
-                    headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+                    headers: {
+                        'User-Agent':
+                            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                    },
                 }
             );
 
@@ -298,12 +307,10 @@ async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
                 console.log(c.bold('🔍 STEP 2: Validating addresses (parallel batches)...\n'));
 
                 // Take up to 500 random addresses to validate
-                const toValidate = potentialTraders
-                    .sort(() => 0.5 - Math.random())
-                    .slice(0, 500);
+                const toValidate = potentialTraders.sort(() => 0.5 - Math.random()).slice(0, 500);
 
                 const validTraders = await validateAddressesBatch(toValidate);
-                validTraders.forEach(addr => discoveredTraders.add(addr.toLowerCase()));
+                validTraders.forEach((addr) => discoveredTraders.add(addr.toLowerCase()));
 
                 console.log(c.green(`  ✅ Validated ${discoveredTraders.size} active traders\n`));
             }
@@ -312,7 +319,9 @@ async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
         // STEP 4: Use seed traders as fallback/supplement
         console.log(c.bold('📡 STEP 3: Bootstrapping from seed traders...\n'));
 
-        for (const seedTrader of SEED_TRADERS.filter(t => !t.includes('dead') && !t.includes('beef'))) {
+        for (const seedTrader of SEED_TRADERS.filter(
+            (t) => !t.includes('dead') && !t.includes('beef')
+        )) {
             discoveredTraders.add(seedTrader.toLowerCase());
         }
 
@@ -331,7 +340,11 @@ async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
                 .sort(() => 0.5 - Math.random())
                 .slice(0, expansionCount);
 
-            console.log(c.cyan(`  Round ${round + 1}/${MAX_DISCOVERY_ROUNDS}: Expanding from ${expansionCount} traders...`));
+            console.log(
+                c.cyan(
+                    `  Round ${round + 1}/${MAX_DISCOVERY_ROUNDS}: Expanding from ${expansionCount} traders...`
+                )
+            );
 
             // Expand in parallel batches
             const expandChunks: string[][] = [];
@@ -340,7 +353,7 @@ async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
             }
 
             for (const chunk of expandChunks) {
-                const promises = chunk.map(trader => expandNetworkFromTrader(trader, 300));
+                const promises = chunk.map((trader) => expandNetworkFromTrader(trader, 300));
                 const results = await Promise.all(promises);
 
                 // Process all markets found
@@ -348,21 +361,27 @@ async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
 
                 // For each market, try to get recent traders (this is indirect discovery)
                 // We'll add the traders we expanded from as they're confirmed active
-                chunk.forEach(t => discoveredTraders.add(t.toLowerCase()));
+                chunk.forEach((t) => discoveredTraders.add(t.toLowerCase()));
 
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise((resolve) => setTimeout(resolve, 100));
             }
 
             const newFound = discoveredTraders.size - startSize;
-            console.log(c.green(`    ✅ Round ${round + 1} complete: +${newFound} traders (Total: ${discoveredTraders.size})`));
+            console.log(
+                c.green(
+                    `    ✅ Round ${round + 1} complete: +${newFound} traders (Total: ${discoveredTraders.size})`
+                )
+            );
 
             // If we've hit our target, stop
             if (discoveredTraders.size >= TARGET_DISCOVERY_COUNT) {
-                console.log(c.greenBold(`\n  🎯 Target reached: ${discoveredTraders.size} traders!\n`));
+                console.log(
+                    c.greenBold(`\n  🎯 Target reached: ${discoveredTraders.size} traders!\n`)
+                );
                 break;
             }
 
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300));
         }
 
         // STEP 6: Final validation pass on a sample if we have too many
@@ -377,19 +396,22 @@ async function discoverTradersFromRandomActivities(): Promise<Set<string>> {
 
             // Replace with validated set
             discoveredTraders.clear();
-            validated.forEach(addr => discoveredTraders.add(addr.toLowerCase()));
+            validated.forEach((addr) => discoveredTraders.add(addr.toLowerCase()));
 
             console.log(c.green(`  ✅ Final validated set: ${discoveredTraders.size} traders\n`));
         }
 
-        console.log(c.greenBold(`\n🎉 DISCOVERY COMPLETE: ${discoveredTraders.size} unique traders found!\n`));
+        console.log(
+            c.greenBold(
+                `\n🎉 DISCOVERY COMPLETE: ${discoveredTraders.size} unique traders found!\n`
+            )
+        );
         return discoveredTraders;
-
     } catch (error) {
         console.log(c.red('❌ Discovery failed with error:'), error);
 
         // Fallback to seed traders
-        SEED_TRADERS.forEach(t => {
+        SEED_TRADERS.forEach((t) => {
             if (!t.includes('dead') && !t.includes('beef')) {
                 discoveredTraders.add(t.toLowerCase());
             }
@@ -428,7 +450,7 @@ async function fetchTraderActivityBatch(
             outcome: item.outcome || 'Unknown',
         }));
 
-        return trades.filter(t => t.timestamp >= sinceTimestamp);
+        return trades.filter((t) => t.timestamp >= sinceTimestamp);
     } catch (error) {
         return [];
     }
@@ -450,7 +472,12 @@ async function fetchTraderActivity(traderAddress: string): Promise<Trade[]> {
             const promises: Promise<Trade[]>[] = [];
             for (let i = 0; i < maxParallel; i++) {
                 promises.push(
-                    fetchTraderActivityBatch(traderAddress, offset + i * batchSize, batchSize, sinceTimestamp)
+                    fetchTraderActivityBatch(
+                        traderAddress,
+                        offset + i * batchSize,
+                        batchSize,
+                        sinceTimestamp
+                    )
                 );
             }
 
@@ -499,10 +526,10 @@ async function fetchTraderPositions(traderAddress: string): Promise<Position[]> 
 }
 
 async function getTraderCapitalAtTime(timestamp: number, trades: Trade[]): Promise<number> {
-    const pastTrades = trades.filter(t => t.timestamp <= timestamp);
+    const pastTrades = trades.filter((t) => t.timestamp <= timestamp);
     let capital = 100000;
 
-    pastTrades.forEach(trade => {
+    pastTrades.forEach((trade) => {
         if (trade.side === 'BUY') {
             capital -= trade.usdcSize;
         } else {
@@ -532,7 +559,10 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
                 realizedPnl: 0,
                 unrealizedPnl: 0,
                 lastActivityTime: trades.length > 0 ? trades[trades.length - 1].timestamp : 0,
-                lastActivityDate: trades.length > 0 ? moment.unix(trades[trades.length - 1].timestamp).fromNow() : 'Unknown',
+                lastActivityDate:
+                    trades.length > 0
+                        ? moment.unix(trades[trades.length - 1].timestamp).fromNow()
+                        : 'Unknown',
                 profileUrl: `https://polymarket.com/profile/${traderAddress}`,
                 status: 'bad',
                 error: `Not enough trades (${trades.length} < ${MIN_TRADER_TRADES})`,
@@ -634,7 +664,7 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
         for (const [key, simPos] of positions.entries()) {
             if (!simPos.closed) {
                 const assetId = key.split(':')[0];
-                const traderPos = traderPositions.find(tp => tp.asset === assetId);
+                const traderPos = traderPositions.find((tp) => tp.asset === assetId);
 
                 if (traderPos && traderPos.size > 0) {
                     const currentPrice = traderPos.currentValue / traderPos.size;
@@ -661,16 +691,19 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
         const currentCapital =
             yourCapital +
             Array.from(positions.values())
-                .filter(p => !p.closed)
+                .filter((p) => !p.closed)
                 .reduce((sum, p) => sum + p.currentValue, 0);
 
         const totalPnl = currentCapital - STARTING_CAPITAL;
         const roi = (totalPnl / STARTING_CAPITAL) * 100;
 
         // Calculate win rate
-        const closedPositions = Array.from(positions.values()).filter(p => p.closed);
-        const winningPositions = closedPositions.filter(p => p.pnl > 0);
-        const winRate = closedPositions.length > 0 ? (winningPositions.length / closedPositions.length) * 100 : 0;
+        const closedPositions = Array.from(positions.values()).filter((p) => p.closed);
+        const winningPositions = closedPositions.filter((p) => p.pnl > 0);
+        const winRate =
+            closedPositions.length > 0
+                ? (winningPositions.length / closedPositions.length) * 100
+                : 0;
 
         // Calculate avg trade size
         const avgTradeSize = copiedTrades > 0 ? totalInvested / copiedTrades : 0;
@@ -692,12 +725,15 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
             totalTrades: trades.length,
             copiedTrades,
             avgTradeSize,
-            openPositions: Array.from(positions.values()).filter(p => !p.closed).length,
+            openPositions: Array.from(positions.values()).filter((p) => !p.closed).length,
             closedPositions: closedPositions.length,
             realizedPnl,
             unrealizedPnl,
             lastActivityTime: trades.length > 0 ? trades[trades.length - 1].timestamp : 0,
-            lastActivityDate: trades.length > 0 ? moment.unix(trades[trades.length - 1].timestamp).fromNow() : 'Unknown',
+            lastActivityDate:
+                trades.length > 0
+                    ? moment.unix(trades[trades.length - 1].timestamp).fromNow()
+                    : 'Unknown',
             profileUrl: `https://polymarket.com/profile/${traderAddress}`,
             status,
         };
@@ -726,23 +762,35 @@ async function analyzeTrader(traderAddress: string): Promise<TraderAnalysis> {
 
 function getStatusColor(status: string): any {
     switch (status) {
-        case 'excellent': return c.greenBold;
-        case 'good': return c.green;
-        case 'average': return c.yellow;
-        case 'poor': return c.gray;
-        case 'bad': return c.red;
-        default: return c.gray;
+        case 'excellent':
+            return c.greenBold;
+        case 'good':
+            return c.green;
+        case 'average':
+            return c.yellow;
+        case 'poor':
+            return c.gray;
+        case 'bad':
+            return c.red;
+        default:
+            return c.gray;
     }
 }
 
 function getStatusIcon(status: string): string {
     switch (status) {
-        case 'excellent': return '🏆';
-        case 'good': return '✅';
-        case 'average': return '⚠️';
-        case 'poor': return '📉';
-        case 'bad': return '❌';
-        default: return '❓';
+        case 'excellent':
+            return '🏆';
+        case 'good':
+            return '✅';
+        case 'average':
+            return '⚠️';
+        case 'poor':
+            return '📉';
+        case 'bad':
+            return '❌';
+        default:
+            return '❓';
     }
 }
 
@@ -752,8 +800,14 @@ function printResultsTable(results: TraderAnalysis[]) {
     console.log(c.cyan('═'.repeat(140)) + '\n');
 
     console.log(c.gray(`  Analysis Date: ${moment().format('YYYY-MM-DD HH:mm:ss')}`));
-    console.log(c.gray(`  Period: ${HISTORY_DAYS} days | Multiplier: ${MULTIPLIER}x | Starting Capital: $${STARTING_CAPITAL}`));
-    console.log(c.gray(`  Min Order: $${MIN_ORDER_SIZE} | Min Trader Trades: ${MIN_TRADER_TRADES}\n`));
+    console.log(
+        c.gray(
+            `  Period: ${HISTORY_DAYS} days | Multiplier: ${MULTIPLIER}x | Starting Capital: $${STARTING_CAPITAL}`
+        )
+    );
+    console.log(
+        c.gray(`  Min Order: $${MIN_ORDER_SIZE} | Min Trader Trades: ${MIN_TRADER_TRADES}\n`)
+    );
 
     // Sort by ROI
     const sorted = [...results].sort((a, b) => b.roi - a.roi);
@@ -767,15 +821,15 @@ function printResultsTable(results: TraderAnalysis[]) {
     console.log(
         c.bold(
             `${'#'.padEnd(4)} ` +
-            `${'Address'.padEnd(20)} ` +
-            `${'Status'.padEnd(12)} ` +
-            `${'ROI %'.padStart(10)} ` +
-            `${'P&L $'.padStart(12)} ` +
-            `${'Win %'.padStart(8)} ` +
-            `${'Trades'.padStart(10)} ` +
-            `${'Avg Size'.padStart(12)} ` +
-            `${'Positions'.padStart(12)} ` +
-            `${'Last Active'.padEnd(18)}`
+                `${'Address'.padEnd(20)} ` +
+                `${'Status'.padEnd(12)} ` +
+                `${'ROI %'.padStart(10)} ` +
+                `${'P&L $'.padStart(12)} ` +
+                `${'Win %'.padStart(8)} ` +
+                `${'Trades'.padStart(10)} ` +
+                `${'Avg Size'.padStart(12)} ` +
+                `${'Positions'.padStart(12)} ` +
+                `${'Last Active'.padEnd(18)}`
         )
     );
     console.log(c.gray('─'.repeat(140)));
@@ -796,7 +850,8 @@ function printResultsTable(results: TraderAnalysis[]) {
         const roiValue = (trader.roi >= 0 ? '+' : '') + trader.roi.toFixed(2);
         const roiStr = roiColor(roiValue).padStart(10 + (roiValue.includes('-') ? 0 : 0));
 
-        const pnlValue = (trader.totalPnl >= 0 ? '+$' : '-$') + Math.abs(trader.totalPnl).toFixed(2);
+        const pnlValue =
+            (trader.totalPnl >= 0 ? '+$' : '-$') + Math.abs(trader.totalPnl).toFixed(2);
         const pnlStr = pnlColor(pnlValue).padStart(12);
 
         const winValue = trader.winRate.toFixed(1);
@@ -826,19 +881,27 @@ function printResultsTable(results: TraderAnalysis[]) {
     console.log(c.gray('─'.repeat(140)));
 
     // Summary statistics
-    const profitable = sorted.filter(t => t.roi > 0 && !t.error);
-    const excellent = sorted.filter(t => t.status === 'excellent');
-    const good = sorted.filter(t => t.status === 'good');
-    const avgROI = sorted.filter(t => !t.error).reduce((sum, t) => sum + t.roi, 0) / sorted.filter(t => !t.error).length || 0;
-    const avgWinRate = sorted.filter(t => !t.error).reduce((sum, t) => sum + t.winRate, 0) / sorted.filter(t => !t.error).length || 0;
+    const profitable = sorted.filter((t) => t.roi > 0 && !t.error);
+    const excellent = sorted.filter((t) => t.status === 'excellent');
+    const good = sorted.filter((t) => t.status === 'good');
+    const avgROI =
+        sorted.filter((t) => !t.error).reduce((sum, t) => sum + t.roi, 0) /
+            sorted.filter((t) => !t.error).length || 0;
+    const avgWinRate =
+        sorted.filter((t) => !t.error).reduce((sum, t) => sum + t.winRate, 0) /
+            sorted.filter((t) => !t.error).length || 0;
 
     console.log('\n' + c.bold('📈 SUMMARY STATISTICS:\n'));
 
     console.log(`  Total Analyzed:       ${c.cyan(sorted.length.toString())}`);
-    console.log(`  Profitable Traders:   ${c.green(profitable.length.toString())} (${((profitable.length / sorted.length) * 100).toFixed(1)}%)`);
+    console.log(
+        `  Profitable Traders:   ${c.green(profitable.length.toString())} (${((profitable.length / sorted.length) * 100).toFixed(1)}%)`
+    );
     console.log(`  Excellent (🏆):       ${c.greenBold(excellent.length.toString())}`);
     console.log(`  Good (✅):            ${c.green(good.length.toString())}`);
-    console.log(`  Average ROI:          ${avgROI >= 0 ? c.green('+') : c.red('')}${avgROI.toFixed(2)}%`);
+    console.log(
+        `  Average ROI:          ${avgROI >= 0 ? c.green('+') : c.red('')}${avgROI.toFixed(2)}%`
+    );
     console.log(`  Average Win Rate:     ${c.yellow(avgWinRate.toFixed(1) + '%')}`);
 
     console.log('\n' + c.cyan('═'.repeat(140)) + '\n');
@@ -849,9 +912,9 @@ function printResultsTable(results: TraderAnalysis[]) {
         excellent.slice(0, 5).forEach((t, i) => {
             console.log(
                 `  ${i + 1}. ${c.blue(t.address)} - ` +
-                `ROI: ${c.greenBold(`+${t.roi.toFixed(2)}%`)} | ` +
-                `Win: ${c.green(`${t.winRate.toFixed(1)}%`)} | ` +
-                `Trades: ${c.cyan(t.copiedTrades.toString())}`
+                    `ROI: ${c.greenBold(`+${t.roi.toFixed(2)}%`)} | ` +
+                    `Win: ${c.green(`${t.winRate.toFixed(1)}%`)} | ` +
+                    `Trades: ${c.cyan(t.copiedTrades.toString())}`
             );
             console.log(`     ${c.gray(t.profileUrl)}`);
         });
@@ -861,9 +924,9 @@ function printResultsTable(results: TraderAnalysis[]) {
         good.slice(0, 5).forEach((t, i) => {
             console.log(
                 `  ${i + 1}. ${c.blue(t.address)} - ` +
-                `ROI: ${c.green(`+${t.roi.toFixed(2)}%`)} | ` +
-                `Win: ${c.yellow(`${t.winRate.toFixed(1)}%`)} | ` +
-                `Trades: ${c.cyan(t.copiedTrades.toString())}`
+                    `ROI: ${c.green(`+${t.roi.toFixed(2)}%`)} | ` +
+                    `Win: ${c.yellow(`${t.winRate.toFixed(1)}%`)} | ` +
+                    `Trades: ${c.cyan(t.copiedTrades.toString())}`
             );
             console.log(`     ${c.gray(t.profileUrl)}`);
         });
@@ -873,9 +936,9 @@ function printResultsTable(results: TraderAnalysis[]) {
         profitable.slice(0, 5).forEach((t, i) => {
             console.log(
                 `  ${i + 1}. ${c.blue(t.address)} - ` +
-                `ROI: ${c.yellow(`+${t.roi.toFixed(2)}%`)} | ` +
-                `Win: ${c.yellow(`${t.winRate.toFixed(1)}%`)} | ` +
-                `Trades: ${c.cyan(t.copiedTrades.toString())}`
+                    `ROI: ${c.yellow(`+${t.roi.toFixed(2)}%`)} | ` +
+                    `Win: ${c.yellow(`${t.winRate.toFixed(1)}%`)} | ` +
+                    `Trades: ${c.cyan(t.copiedTrades.toString())}`
             );
             console.log(`     ${c.gray(t.profileUrl)}`);
         });
@@ -911,14 +974,18 @@ function saveResults(results: TraderAnalysis[]) {
         },
         summary: {
             totalAnalyzed: results.length,
-            profitable: results.filter(r => r.roi > 0 && !r.error).length,
-            excellent: results.filter(r => r.status === 'excellent').length,
-            good: results.filter(r => r.status === 'good').length,
-            average: results.filter(r => r.status === 'average').length,
-            poor: results.filter(r => r.status === 'poor').length,
-            bad: results.filter(r => r.status === 'bad').length,
-            avgROI: results.filter(r => !r.error).reduce((sum, r) => sum + r.roi, 0) / results.filter(r => !r.error).length || 0,
-            avgWinRate: results.filter(r => !r.error).reduce((sum, r) => sum + r.winRate, 0) / results.filter(r => !r.error).length || 0,
+            profitable: results.filter((r) => r.roi > 0 && !r.error).length,
+            excellent: results.filter((r) => r.status === 'excellent').length,
+            good: results.filter((r) => r.status === 'good').length,
+            average: results.filter((r) => r.status === 'average').length,
+            poor: results.filter((r) => r.status === 'poor').length,
+            bad: results.filter((r) => r.status === 'bad').length,
+            avgROI:
+                results.filter((r) => !r.error).reduce((sum, r) => sum + r.roi, 0) /
+                    results.filter((r) => !r.error).length || 0,
+            avgWinRate:
+                results.filter((r) => !r.error).reduce((sum, r) => sum + r.winRate, 0) /
+                    results.filter((r) => !r.error).length || 0,
         },
         traders: results.sort((a, b) => b.roi - a.roi),
     };
@@ -928,9 +995,9 @@ function saveResults(results: TraderAnalysis[]) {
 
     // Save top profitable addresses
     const profitableAddresses = results
-        .filter(r => r.roi > 0 && !r.error)
+        .filter((r) => r.roi > 0 && !r.error)
         .sort((a, b) => b.roi - a.roi)
-        .map(r => r.address);
+        .map((r) => r.address);
 
     if (profitableAddresses.length > 0) {
         const addressFile = path.join(resultsDir, `profitable_addresses_${timestamp}.txt`);
@@ -942,12 +1009,22 @@ function saveResults(results: TraderAnalysis[]) {
 async function main() {
     console.clear();
 
-    console.log(c.bold('\n╔══════════════════════════════════════════════════════════════════════════════╗'));
-    console.log(c.bold('║          🔍 POLYMARKET MASS TRADER SCANNER - Thousands Discovery            ║'));
-    console.log(c.bold('╚══════════════════════════════════════════════════════════════════════════════╝\n'));
+    console.log(
+        c.bold('\n╔══════════════════════════════════════════════════════════════════════════════╗')
+    );
+    console.log(
+        c.bold('║          🔍 POLYMARKET MASS TRADER SCANNER - Thousands Discovery            ║')
+    );
+    console.log(
+        c.bold('╚══════════════════════════════════════════════════════════════════════════════╝\n')
+    );
 
     console.log(c.cyan('  🚀 MASS DISCOVERY MODE ACTIVATED'));
-    console.log(c.gray(`  Target Traders: ${TARGET_DISCOVERY_COUNT} | Markets: ${MAX_MARKETS_TO_SCAN} | Rounds: ${MAX_DISCOVERY_ROUNDS}`));
+    console.log(
+        c.gray(
+            `  Target Traders: ${TARGET_DISCOVERY_COUNT} | Markets: ${MAX_MARKETS_TO_SCAN} | Rounds: ${MAX_DISCOVERY_ROUNDS}`
+        )
+    );
     console.log(c.gray(`  Analysis Period: ${HISTORY_DAYS} days | Multiplier: ${MULTIPLIER}x`));
     console.log(c.gray(`  Parallel Batch Size: ${PARALLEL_VALIDATION_BATCH}\n`));
 
@@ -956,11 +1033,17 @@ async function main() {
         const traders = await discoverTradersFromRandomActivities();
 
         if (traders.size === 0) {
-            console.log(c.red('\n❌ No traders discovered. Please check your internet connection.\n'));
+            console.log(
+                c.red('\n❌ No traders discovered. Please check your internet connection.\n')
+            );
             return;
         }
 
-        console.log(c.yellow(`\n📋 Found ${traders.size} unique traders. Will analyze up to ${MAX_ANALYZE_TRADERS}...\n`));
+        console.log(
+            c.yellow(
+                `\n📋 Found ${traders.size} unique traders. Will analyze up to ${MAX_ANALYZE_TRADERS}...\n`
+            )
+        );
 
         // Step 2: Randomly select traders to analyze
         const tradersArray = Array.from(traders);
@@ -973,13 +1056,15 @@ async function main() {
 
         for (let i = 0; i < toAnalyze.length; i++) {
             const trader = toAnalyze[i];
-            console.log(c.gray(`[${i + 1}/${toAnalyze.length}] Analyzing ${trader.slice(0, 10)}...`));
+            console.log(
+                c.gray(`[${i + 1}/${toAnalyze.length}] Analyzing ${trader.slice(0, 10)}...`)
+            );
 
             const analysis = await analyzeTrader(trader);
             results.push(analysis);
 
             // Small delay
-            await new Promise(resolve => setTimeout(resolve, 200));
+            await new Promise((resolve) => setTimeout(resolve, 200));
         }
 
         console.log(c.green(`\n✅ Analyzed ${results.length} traders!\n`));
@@ -991,7 +1076,6 @@ async function main() {
         saveResults(results);
 
         console.log(c.greenBold('✅ SCAN COMPLETE!\n'));
-
     } catch (error) {
         console.error(c.red('\n❌ Scan failed:'), error);
         process.exit(1);

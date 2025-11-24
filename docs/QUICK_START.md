@@ -117,6 +117,7 @@ The sandglass icon (⏳⌛) will animate while waiting for trades.
 ### What to Look For
 
 ✅ **Good Trader Characteristics:**
+
 - Positive total P&L (green numbers)
 - Win rate above 55%
 - Consistent trading activity (not just one lucky bet)
@@ -124,6 +125,7 @@ The sandglass icon (⏳⌛) will animate while waiting for trades.
 - Recent activity (traded in last 7 days)
 
 ❌ **Red Flags:**
+
 - One massive winning bet with no other activity
 - Win rate below 50%
 - Position sizes too large for your capital
@@ -136,30 +138,36 @@ The sandglass icon (⏳⌛) will animate while waiting for trades.
 When a trader you're following makes a trade, the bot:
 
 ### 1. Detects the Trade
+
 Checks every second for new positions
 
 ### 2. Calculates Your Position Size
+
 ```
 ratio = your_balance / (trader_balance + trade_size)
 your_trade_size = trader_trade_size × ratio
 ```
 
 **Example:**
+
 - Trader has $10,000, buys $1,000 worth (10% of capital)
 - You have $1,000
 - Ratio: `1,000 / (10,000 + 1,000) = 0.091` (9.1%)
 - You buy: `$1,000 × 0.091 = $91` (9.1% of your capital)
 
 ### 3. Checks Price Slippage
+
 - Compares current market price to trader's execution price
 - Skips trade if difference is > $0.05 (to avoid bad fills)
 
 ### 4. Executes Order
+
 - Places market order at best available price
 - Uses Fill-or-Kill (FOK) order type
 - Retries up to 3 times if initial order fails
 
 ### 5. Logs Result
+
 ```
 ──────────────────────────────────────────────────────────────────────
 📊 NEW TRADE DETECTED
@@ -187,26 +195,31 @@ Balances:
 ⚠️ **IMPORTANT:** This bot trades with real money. Follow these guidelines:
 
 ### 1. Start Small
+
 - Begin with $100-500 to test the bot
 - Verify it's copying trades correctly
 - Scale up gradually once confident
 
 ### 2. Use a Dedicated Wallet
+
 - Don't use your main wallet
 - Create a fresh wallet just for the bot
 - Only keep trading capital there
 
 ### 3. Monitor Daily
+
 - Check logs at least once per day
 - Verify trades are executing as expected
 - Watch for any errors or failed orders
 
 ### 4. Diversify
+
 - Don't copy just one trader
 - Track 3-5 different strategies
 - Example: `USER_ADDRESSES = 'trader1, trader2, trader3'`
 
 ### 5. Know Your Limits
+
 - Bot has no built-in stop-loss
 - Can potentially lose all funds if traders lose
 - Only invest what you can afford to lose
@@ -218,11 +231,13 @@ Balances:
 ### Bot Won't Start
 
 **Error: "USER_ADDRESSES is not defined"**
+
 - Check your `.env` file exists
 - Verify `USER_ADDRESSES` is spelled correctly
 - Ensure no extra spaces around the `=` sign
 
 **Error: "MongoDB connection failed"**
+
 - Verify `MONGO_URI` is correct
 - Check MongoDB Atlas IP whitelist (allow `0.0.0.0/0` for testing)
 - Ensure database user has read/write permissions
@@ -230,29 +245,34 @@ Balances:
 ### No Trades Detected
 
 1. **Verify trader is active**
-   - Check their Polymarket profile
-   - Confirm they've traded recently
+
+    - Check their Polymarket profile
+    - Confirm they've traded recently
 
 2. **Check logs for errors**
-   - Look for API connection issues
-   - Verify MongoDB is storing data
+
+    - Look for API connection issues
+    - Verify MongoDB is storing data
 
 3. **Increase verbosity**
-   - Bot only shows trades when they happen
-   - Silence is normal when traders aren't trading
+    - Bot only shows trades when they happen
+    - Silence is normal when traders aren't trading
 
 ### Trades Failing
 
 **"Insufficient balance"**
+
 - Ensure `PROXY_WALLET` has USDC
 - Verify you have MATIC for gas
 
 **"Price slippage too high"**
+
 - Market moved too fast
 - Consider increasing tolerance in code
 - Or increase `FETCH_INTERVAL` to 2-3 seconds
 
 **"No bids/asks available"**
+
 - Market may have low liquidity
 - Try trading more popular markets
 - Check Polymarket directly to verify
@@ -260,10 +280,12 @@ Balances:
 ### Performance Issues
 
 **Bot using too much CPU**
+
 - Increase `FETCH_INTERVAL` from 1 to 2-3 seconds
 - Reduce number of traders tracked
 
 **Trades executing too slowly**
+
 - Decrease `FETCH_INTERVAL` to 0.5 seconds (risky)
 - Use faster RPC endpoint (Alchemy vs Infura)
 - Ensure stable internet connection
@@ -275,19 +297,21 @@ Balances:
 Once your bot is running successfully:
 
 1. **First 24 Hours**
-   - Monitor continuously
-   - Verify each trade execution
-   - Check position sizing is correct
+
+    - Monitor continuously
+    - Verify each trade execution
+    - Check position sizing is correct
 
 2. **Week 1**
-   - Review profitability
-   - Compare your P&L to trader's P&L
-   - Adjust if trades are too large/small
+
+    - Review profitability
+    - Compare your P&L to trader's P&L
+    - Adjust if trades are too large/small
 
 3. **Ongoing**
-   - Check logs daily
-   - Research new traders to copy
-   - Consider adding protective features
+    - Check logs daily
+    - Research new traders to copy
+    - Consider adding protective features
 
 ---
 
@@ -337,9 +361,9 @@ If you encounter issues:
 1. Check this guide's troubleshooting section
 2. Review the [main README](./README.md)
 3. Open a GitHub issue with:
-   - Error message (remove private keys!)
-   - Steps to reproduce
-   - Your environment (Node version, OS)
+    - Error message (remove private keys!)
+    - Steps to reproduce
+    - Your environment (Node version, OS)
 
 ---
 

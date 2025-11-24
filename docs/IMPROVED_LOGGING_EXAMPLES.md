@@ -1,6 +1,7 @@
 # Improved Logging Examples
 
 ## Overview
+
 Enhanced logging to make trade execution decisions more transparent and understandable.
 
 ---
@@ -8,6 +9,7 @@ Enhanced logging to make trade execution decisions more transparent and understa
 ## BUY Strategy - Skip Example (Old vs New)
 
 ### ❌ Old Logging (Unclear)
+
 ```
 ℹ Executing BUY strategy...
 ℹ Position ratio: 0.073% (your $266.50 / trader's $363262.86)
@@ -17,11 +19,13 @@ Enhanced logging to make trade execution decisions more transparent and understa
 ```
 
 **Problems:**
+
 - Unclear why the trade was skipped
 - No solution provided
 - Missing key calculations
 
 ### ✅ New Logging (Clear & Actionable)
+
 ```
 ℹ Executing BUY strategy...
 ℹ Balance comparison: You have $266.50 vs Trader's $363262.86 (1362.9x larger)
@@ -34,6 +38,7 @@ Enhanced logging to make trade execution decisions more transparent and understa
 ```
 
 **Improvements:**
+
 - Shows exact balance comparison (1362.9x larger)
 - Shows step-by-step calculation
 - Provides actionable solution
@@ -59,6 +64,7 @@ Enhanced logging to make trade execution decisions more transparent and understa
 ## SELL Strategy - Detailed Example
 
 ### With Multiplier Applied
+
 ```
 ℹ Executing SELL strategy...
 ℹ Position comparison: Trader has 500.00 tokens, You have 750.00 tokens
@@ -70,6 +76,7 @@ Enhanced logging to make trade execution decisions more transparent and understa
 ```
 
 ### Position Size Cap
+
 ```
 ℹ Executing SELL strategy...
 ℹ Position comparison: Trader has 1000.00 tokens, You have 200.00 tokens
@@ -82,6 +89,7 @@ Enhanced logging to make trade execution decisions more transparent and understa
 ```
 
 ### Full Position Exit
+
 ```
 ℹ Executing SELL strategy...
 ℹ Trader closed entire position → Selling all your 450.00 tokens
@@ -94,23 +102,28 @@ Enhanced logging to make trade execution decisions more transparent and understa
 ## Key Improvements
 
 ### 1. **Balance Context**
+
 - Shows exact ratio between your balance and trader's balance
 - Example: "2.0x larger" vs "1362.9x larger"
 
 ### 2. **Step-by-Step Calculations**
+
 - Shows proportional calculation explicitly
 - Example: "$19.57 × 0.073% = $0.0144"
 
 ### 3. **Multiplier Transparency**
+
 - Shows before/after multiplier application
 - Example: "$0.0144 → $0.0431"
 
 ### 4. **Actionable Solutions**
+
 - Provides exact numbers for solutions
 - Example: "Need at least $45851.46 balance"
 - Offers alternatives
 
 ### 5. **Position Comparisons (SELL)**
+
 - Shows both trader and your token holdings
 - Shows percentage calculations
 - Shows multiplier effects on token amounts

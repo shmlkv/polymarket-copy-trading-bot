@@ -57,7 +57,15 @@ const init = async () => {
                 .slice(0, 5);
 
             Logger.clearLine();
-            Logger.myPositions(ENV.PROXY_WALLET, myPositions.length, myTopPositions, myOverallPnl, totalValue, initialValue, currentBalance);
+            Logger.myPositions(
+                ENV.PROXY_WALLET,
+                myPositions.length,
+                myTopPositions,
+                myOverallPnl,
+                totalValue,
+                initialValue,
+                currentBalance
+            );
         } else {
             Logger.clearLine();
             Logger.myPositions(ENV.PROXY_WALLET, 0, [], 0, 0, 0, currentBalance);
@@ -77,7 +85,7 @@ const init = async () => {
         // Calculate overall profitability (weighted average by current value)
         let totalValue = 0;
         let weightedPnl = 0;
-        positions.forEach(pos => {
+        positions.forEach((pos) => {
             const value = pos.currentValue || 0;
             const pnl = pos.percentPnl || 0;
             totalValue += value;
@@ -90,7 +98,7 @@ const init = async () => {
         const topPositions = positions
             .sort((a, b) => (b.percentPnl || 0) - (a.percentPnl || 0))
             .slice(0, 3)
-            .map(p => p.toObject());
+            .map((p) => p.toObject());
         positionDetails.push(topPositions);
     }
     Logger.clearLine();
@@ -196,7 +204,9 @@ const fetchTradeData = async () => {
                 }
             }
         } catch (error) {
-            Logger.error(`Error fetching data for ${address.slice(0, 6)}...${address.slice(-4)}: ${error}`);
+            Logger.error(
+                `Error fetching data for ${address.slice(0, 6)}...${address.slice(-4)}: ${error}`
+            );
         }
     }
 };
@@ -228,7 +238,9 @@ const tradeMonitor = async () => {
                 { $set: { bot: true, botExcutedTime: 999 } }
             );
             if (count.modifiedCount > 0) {
-                Logger.info(`Marked ${count.modifiedCount} historical trades as processed for ${address.slice(0, 6)}...${address.slice(-4)}`);
+                Logger.info(
+                    `Marked ${count.modifiedCount} historical trades as processed for ${address.slice(0, 6)}...${address.slice(-4)}`
+                );
             }
         }
         isFirstRun = false;
@@ -241,7 +253,7 @@ const tradeMonitor = async () => {
         if (!isRunning) break;
         await new Promise((resolve) => setTimeout(resolve, FETCH_INTERVAL * 1000));
     }
-    
+
     Logger.info('Trade monitor stopped');
 };
 

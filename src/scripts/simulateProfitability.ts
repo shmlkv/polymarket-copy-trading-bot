@@ -128,7 +128,7 @@ async function fetchBatch(offset: number, limit: number, sinceTimestamp: number)
         outcome: item.outcome || 'Unknown',
     }));
 
-    return trades.filter(t => t.timestamp >= sinceTimestamp);
+    return trades.filter((t) => t.timestamp >= sinceTimestamp);
 }
 
 async function fetchTraderActivity(): Promise<Trade[]> {
@@ -144,11 +144,17 @@ async function fetchTraderActivity(): Promise<Trade[]> {
         if (fs.existsSync(cacheFile)) {
             console.log(colors.cyan('📦 Loading cached trader activity...'));
             const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-            console.log(colors.green(`✓ Loaded ${cached.trades.length} trades from cache (${cached.name})`));
+            console.log(
+                colors.green(`✓ Loaded ${cached.trades.length} trades from cache (${cached.name})`)
+            );
             return cached.trades;
         }
 
-        console.log(colors.cyan(`📊 Fetching trader activity from last ${HISTORY_DAYS} days (with parallel requests)...`));
+        console.log(
+            colors.cyan(
+                `📊 Fetching trader activity from last ${HISTORY_DAYS} days (with parallel requests)...`
+            )
+        );
 
         // Calculate timestamp for history window
         const sinceTimestamp = Math.floor((Date.now() - HISTORY_DAYS * 24 * 60 * 60 * 1000) / 1000);
@@ -191,7 +197,11 @@ async function fetchTraderActivity(): Promise<Trade[]> {
 
                 // Check limit
                 if (allTrades.length >= MAX_TRADES_LIMIT) {
-                    console.log(colors.yellow(`⚠️  Reached trade limit (${MAX_TRADES_LIMIT}), stopping fetch...`));
+                    console.log(
+                        colors.yellow(
+                            `⚠️  Reached trade limit (${MAX_TRADES_LIMIT}), stopping fetch...`
+                        )
+                    );
                     allTrades = allTrades.slice(0, MAX_TRADES_LIMIT);
                     hasMore = false;
                 }
@@ -320,7 +330,6 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
             yourCapital -= orderSize;
             totalInvested += orderSize;
             copiedTrades++;
-
         } else if (trade.side === 'SELL') {
             // SELL trade
             if (positions.has(positionKey)) {
@@ -360,10 +369,10 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
                     pos.closed = true;
                     // Calculate final P&L
                     const totalBought = pos.trades
-                        .filter(t => t.side === 'BUY')
+                        .filter((t) => t.side === 'BUY')
                         .reduce((sum, t) => sum + t.usdcSize, 0);
                     const totalSold = pos.trades
-                        .filter(t => t.side === 'SELL')
+                        .filter((t) => t.side === 'SELL')
                         .reduce((sum, t) => sum + t.usdcSize, 0);
                     pos.pnl = totalSold - totalBought;
                 }
@@ -385,7 +394,7 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
         if (!simPos.closed) {
             // Find matching trader position to get current value
             const assetId = key.split(':')[0];
-            const traderPos = traderPositions.find(tp => tp.asset === assetId);
+            const traderPos = traderPositions.find((tp) => tp.asset === assetId);
 
             if (traderPos) {
                 const currentPrice = traderPos.currentValue / traderPos.size;
@@ -402,9 +411,11 @@ async function simulateCopyTrading(trades: Trade[]): Promise<SimulationResult> {
         }
     }
 
-    const currentCapital = yourCapital + Array.from(positions.values())
-        .filter(p => !p.closed)
-        .reduce((sum, p) => sum + p.currentValue, 0);
+    const currentCapital =
+        yourCapital +
+        Array.from(positions.values())
+            .filter((p) => !p.closed)
+            .reduce((sum, p) => sum + p.currentValue, 0);
 
     const totalPnl = currentCapital - STARTING_CAPITAL;
     const roi = (totalPnl / STARTING_CAPITAL) * 100;
@@ -436,7 +447,11 @@ function printReport(result: SimulationResult) {
     console.log(colors.cyan('═'.repeat(80)) + '\n');
 
     console.log('Trader:', colors.blue(result.traderAddress));
-    console.log('Copy %:', colors.yellow(`${COPY_PERCENTAGE}%`), colors.gray('(of trader order size)'));
+    console.log(
+        'Copy %:',
+        colors.yellow(`${COPY_PERCENTAGE}%`),
+        colors.gray('(of trader order size)')
+    );
     console.log('Multiplier:', colors.yellow(`${MULTIPLIER}x`));
     console.log();
 
@@ -452,27 +467,38 @@ function printReport(result: SimulationResult) {
     const roiSign = result.roi >= 0 ? '+' : '';
     console.log(`  Total P&L:     ${pnlColor(pnlSign + '$' + result.totalPnl.toFixed(2))}`);
     console.log(`  ROI:           ${roiColor(roiSign + result.roi.toFixed(2) + '%')}`);
-    console.log(`  Realized:      ${result.realizedPnl >= 0 ? '+' : ''}$${result.realizedPnl.toFixed(2)}`);
-    console.log(`  Unrealized:    ${result.unrealizedPnl >= 0 ? '+' : ''}$${result.unrealizedPnl.toFixed(2)}`);
+    console.log(
+        `  Realized:      ${result.realizedPnl >= 0 ? '+' : ''}$${result.realizedPnl.toFixed(2)}`
+    );
+    console.log(
+        `  Unrealized:    ${result.unrealizedPnl >= 0 ? '+' : ''}$${result.unrealizedPnl.toFixed(2)}`
+    );
     console.log();
 
     console.log(colors.bold('Trades:'));
     console.log(`  Total trades:  ${colors.cyan(String(result.totalTrades))}`);
     console.log(`  Copied:        ${colors.green(String(result.copiedTrades))}`);
-    console.log(`  Skipped:       ${colors.yellow(String(result.skippedTrades))} (below $${MIN_ORDER_SIZE} minimum)`);
+    console.log(
+        `  Skipped:       ${colors.yellow(String(result.skippedTrades))} (below $${MIN_ORDER_SIZE} minimum)`
+    );
     console.log();
 
-    const openPositions = result.positions.filter(p => !p.closed);
-    const closedPositions = result.positions.filter(p => p.closed);
+    const openPositions = result.positions.filter((p) => !p.closed);
+    const closedPositions = result.positions.filter((p) => p.closed);
 
     console.log(colors.bold('Open Positions:'));
     console.log(`  Count: ${openPositions.length}\n`);
 
     openPositions.slice(0, 10).forEach((pos, i) => {
-        const pnlStr = pos.pnl >= 0 ? colors.green(`+$${pos.pnl.toFixed(2)}`) : colors.red(`-$${Math.abs(pos.pnl).toFixed(2)}`);
+        const pnlStr =
+            pos.pnl >= 0
+                ? colors.green(`+$${pos.pnl.toFixed(2)}`)
+                : colors.red(`-$${Math.abs(pos.pnl).toFixed(2)}`);
         const marketLabel = (pos.market || 'Unknown market').slice(0, 50);
         console.log(`  ${i + 1}. ${marketLabel}`);
-        console.log(`     Outcome: ${pos.outcome} | Invested: $${pos.invested.toFixed(2)} | Value: $${pos.currentValue.toFixed(2)} | P&L: ${pnlStr}`);
+        console.log(
+            `     Outcome: ${pos.outcome} | Invested: $${pos.invested.toFixed(2)} | Value: $${pos.currentValue.toFixed(2)} | P&L: ${pnlStr}`
+        );
     });
 
     if (openPositions.length > 10) {
@@ -484,14 +510,19 @@ function printReport(result: SimulationResult) {
         console.log(`  Count: ${closedPositions.length}\n`);
 
         closedPositions.slice(0, 5).forEach((pos, i) => {
-            const pnlStr = pos.pnl >= 0 ? colors.green(`+$${pos.pnl.toFixed(2)}`) : colors.red(`-$${Math.abs(pos.pnl).toFixed(2)}`);
+            const pnlStr =
+                pos.pnl >= 0
+                    ? colors.green(`+$${pos.pnl.toFixed(2)}`)
+                    : colors.red(`-$${Math.abs(pos.pnl).toFixed(2)}`);
             const marketLabel = (pos.market || 'Unknown market').slice(0, 50);
             console.log(`  ${i + 1}. ${marketLabel}`);
             console.log(`     Outcome: ${pos.outcome} | P&L: ${pnlStr}`);
         });
 
         if (closedPositions.length > 5) {
-            console.log(colors.gray(`\n  ... and ${closedPositions.length - 5} more closed positions`));
+            console.log(
+                colors.gray(`\n  ... and ${closedPositions.length - 5} more closed positions`)
+            );
         }
     }
 
@@ -504,7 +535,9 @@ async function main() {
     console.log(colors.gray(`Starting Capital: $${STARTING_CAPITAL}`));
     console.log(colors.gray(`Copy Percentage: ${COPY_PERCENTAGE}% (of trader order size)`));
     console.log(colors.gray(`Multiplier: ${MULTIPLIER}x`));
-    console.log(colors.gray(`History window: ${HISTORY_DAYS} day(s), max trades: ${MAX_TRADES_LIMIT}\n`));
+    console.log(
+        colors.gray(`History window: ${HISTORY_DAYS} day(s), max trades: ${MAX_TRADES_LIMIT}\n`)
+    );
 
     try {
         const trades = await fetchTraderActivity();
