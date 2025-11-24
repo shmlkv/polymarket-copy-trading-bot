@@ -23,3 +23,67 @@ docs
 simulation_results
 trader_data_cache
 
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# Logs
+logs/
+*.log
+
+# MongoDB data (Docker volumes)
+mongodb_data/
+mongodb_config/
+
+# VPN configuration (contains secrets)
+vpn/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation (not needed in container)
+*.md
+!README.md
+docs/
+
+# CI/CD
+.github/
+
+# Docker files (not needed inside container)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.bak
+*.tmp
+.cache/
