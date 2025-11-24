@@ -14,6 +14,17 @@ export enum CopyStrategy {
     ADAPTIVE = 'ADAPTIVE',
 }
 
+/**
+ * Tier definition for tiered multipliers
+ * Example: { min: 100, max: 500, multiplier: 0.2 }
+ * means trades between $100-$500 use 0.2x multiplier
+ */
+export interface MultiplierTier {
+    min: number;          // Minimum trade size in USD (inclusive)
+    max: number | null;   // Maximum trade size in USD (exclusive), null = infinity
+    multiplier: number;   // Multiplier to apply
+}
+
 export interface CopyStrategyConfig {
     // Core strategy
     strategy: CopyStrategy;
@@ -28,6 +39,14 @@ export interface CopyStrategyConfig {
     adaptiveMinPercent?: number; // Minimum percentage for large orders
     adaptiveMaxPercent?: number; // Maximum percentage for small orders
     adaptiveThreshold?: number; // Threshold in USD to trigger adaptation
+
+    // Tiered multipliers (optional - applies to all strategies)
+    // If set, multiplier is applied based on trader's order size
+    tieredMultipliers?: MultiplierTier[];
+
+    // Legacy single multiplier (for backward compatibility)
+    // Ignored if tieredMultipliers is set
+    tradeMultiplier?: number;
 
     // Safety limits
     maxOrderSizeUSD: number; // Maximum size for a single order
@@ -81,7 +100,13 @@ export function calculateOrderSize(
             throw new Error(`Unknown strategy: ${config.strategy}`);
     }
 
-    let finalAmount = baseAmount;
+    // Step 1.5: Apply tiered or single multiplier based on trader's order size
+    const multiplier = getTradeMultiplier(config, traderOrderSize);
+    let finalAmount = baseAmount * multiplier;
+
+    if (multiplier !== 1.0) {
+        reasoning += ` → ${multiplier}x multiplier: $${baseAmount.toFixed(2)} → $${finalAmount.toFixed(2)}`;
+    }
     let cappedByMax = false;
     let reducedByBalance = false;
     let belowMinimum = false;
@@ -250,4 +275,111 @@ export function getRecommendedConfig(balanceUSD: number): CopyStrategyConfig {
             maxDailyVolumeUSD: 2000.0,
         };
     }
+}
+
+/**
+ * Parse tiered multipliers from environment string
+ * Format: "1-10:2.0,10-100:1.0,100-500:0.2,500+:0.1"
+ *
+ * @param tiersStr - Comma-separated tier definitions
+ * @returns Array of MultiplierTier objects, sorted by min value
+ * @throws Error if format is invalid
+ */
+export function parseTieredMultipliers(tiersStr: string): MultiplierTier[] {
+    if (!tiersStr || tiersStr.trim() === '') {
+        return [];
+    }
+
+    const tiers: MultiplierTier[] = [];
+    const tierDefs = tiersStr.split(',').map(t => t.trim()).filter(t => t);
+
+    for (const tierDef of tierDefs) {
+        // Format: "min-max:multiplier" or "min+:multiplier"
+        const parts = tierDef.split(':');
+        if (parts.length !== 2) {
+            throw new Error(`Invalid tier format: "${tierDef}". Expected "min-max:multiplier" or "min+:multiplier"`);
+        }
+
+        const [range, multiplierStr] = parts;
+        const multiplier = parseFloat(multiplierStr);
+
+        if (isNaN(multiplier) || multiplier < 0) {
+            throw new Error(`Invalid multiplier in tier "${tierDef}": ${multiplierStr}`);
+        }
+
+        // Parse range
+        if (range.endsWith('+')) {
+            // Infinite upper bound: "500+"
+            const min = parseFloat(range.slice(0, -1));
+            if (isNaN(min) || min < 0) {
+                throw new Error(`Invalid minimum value in tier "${tierDef}": ${range}`);
+            }
+            tiers.push({ min, max: null, multiplier });
+        } else if (range.includes('-')) {
+            // Bounded range: "100-500"
+            const [minStr, maxStr] = range.split('-');
+            const min = parseFloat(minStr);
+            const max = parseFloat(maxStr);
+
+            if (isNaN(min) || min < 0) {
+                throw new Error(`Invalid minimum value in tier "${tierDef}": ${minStr}`);
+            }
+            if (isNaN(max) || max <= min) {
+                throw new Error(`Invalid maximum value in tier "${tierDef}": ${maxStr} (must be > ${min})`);
+            }
+
+            tiers.push({ min, max, multiplier });
+        } else {
+            throw new Error(`Invalid range format in tier "${tierDef}". Use "min-max" or "min+"`);
+        }
+    }
+
+    // Sort tiers by min value
+    tiers.sort((a, b) => a.min - b.min);
+
+    // Validate no overlaps and no gaps
+    for (let i = 0; i < tiers.length - 1; i++) {
+        const current = tiers[i];
+        const next = tiers[i + 1];
+
+        if (current.max === null) {
+            throw new Error(`Tier with infinite upper bound must be last: ${current.min}+`);
+        }
+
+        if (current.max > next.min) {
+            throw new Error(`Overlapping tiers: [${current.min}-${current.max}] and [${next.min}-${next.max || '∞'}]`);
+        }
+    }
+
+    return tiers;
+}
+
+/**
+ * Get the appropriate multiplier for a given trade size
+ *
+ * @param config - Copy strategy configuration
+ * @param traderOrderSize - Trader's order size in USD
+ * @returns Multiplier to apply (1.0 if no multiplier configured)
+ */
+export function getTradeMultiplier(config: CopyStrategyConfig, traderOrderSize: number): number {
+    // Use tiered multipliers if configured
+    if (config.tieredMultipliers && config.tieredMultipliers.length > 0) {
+        for (const tier of config.tieredMultipliers) {
+            if (traderOrderSize >= tier.min) {
+                if (tier.max === null || traderOrderSize < tier.max) {
+                    return tier.multiplier;
+                }
+            }
+        }
+        // If no tier matches, use the last tier's multiplier
+        return config.tieredMultipliers[config.tieredMultipliers.length - 1].multiplier;
+    }
+
+    // Fall back to single multiplier if configured
+    if (config.tradeMultiplier !== undefined) {
+        return config.tradeMultiplier;
+    }
+
+    // Default: no multiplier
+    return 1.0;
 }
