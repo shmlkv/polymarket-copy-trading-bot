@@ -19,19 +19,23 @@ export interface HealthCheckResult {
  * Perform health check on all critical components
  */
 export const performHealthCheck = async (): Promise<HealthCheckResult> => {
-    const checks = {
-        database: { status: 'error' as const, message: 'Not checked' },
-        rpc: { status: 'error' as const, message: 'Not checked' },
-        balance: { status: 'error' as const, message: 'Not checked' },
-        polymarketApi: { status: 'error' as const, message: 'Not checked' },
+    const checks: HealthCheckResult['checks'] = {
+        database: { status: 'error', message: 'Not checked' },
+        rpc: { status: 'error', message: 'Not checked' },
+        balance: { status: 'error', message: 'Not checked' },
+        polymarketApi: { status: 'error', message: 'Not checked' },
     };
 
     // Check MongoDB connection
     try {
         if (mongoose.connection.readyState === 1) {
             // Ping the database
-            await mongoose.connection.db.admin().ping();
-            checks.database = { status: 'ok', message: 'Connected' };
+            if (mongoose.connection.db) {
+                await mongoose.connection.db.admin().ping();
+                checks.database = { status: 'ok', message: 'Connected' };
+            } else {
+                checks.database = { status: 'error', message: 'Database object not available' };
+            }
         } else {
             checks.database = { status: 'error', message: `Connection state: ${mongoose.connection.readyState}` };
         }
@@ -77,7 +81,7 @@ export const performHealthCheck = async (): Promise<HealthCheckResult> => {
                 checks.balance = { status: 'ok', message: `Balance: $${balance.toFixed(2)}`, balance };
             }
         } else {
-            checks.balance = { status: 'error', message: 'Zero balance', balance: 0 };
+            checks.balance = { status: 'error', message: 'Zero balance' };
         }
     } catch (error) {
         checks.balance = { status: 'error', message: `Balance check failed: ${error instanceof Error ? error.message : String(error)}` };

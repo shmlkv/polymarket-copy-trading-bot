@@ -45,13 +45,13 @@ const gracefulShutdown = async (signal: string) => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
-    Logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    Logger.error(`Unhandled Rejection at: ${promise}, reason: ${reason}`);
     // Don't exit immediately, let the application try to recover
 });
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error: Error) => {
-    Logger.error('Uncaught Exception:', error);
+    Logger.error(`Uncaught Exception: ${error.message}`);
     // Exit immediately for uncaught exceptions as the application is in an undefined state
     gracefulShutdown('uncaughtException').catch(() => {
         process.exit(1);
