@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 import { AssetType, ClobClient, OrderType, Side } from '@polymarket/clob-client';
 import { SignatureType } from '@polymarket/order-utils';
 import { ENV } from '../config/env';
+import fetchData from '../utils/fetchData';
 
 const PROXY_WALLET = ENV.PROXY_WALLET;
 const PRIVATE_KEY = ENV.PRIVATE_KEY;
@@ -82,11 +83,9 @@ const createClobClient = async (
 
 const fetchPositions = async (): Promise<Position[]> => {
     const url = `https://data-api.polymarket.com/positions?user=${PROXY_WALLET}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-        throw new Error(`Failed to fetch positions: ${response.statusText}`);
-    }
-    return response.json();
+    const myPositions = await fetchData(url);
+    console.log(`Fetched ${myPositions.length} positions from Polymarket API`);
+    return myPositions;
 };
 
 const findMatchingPosition = (positions: Position[], searchQuery: string): Position | undefined => {

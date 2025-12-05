@@ -49,3 +49,4 @@ jest-test-results.json
 .yarn
 simulation_results
 trader_data_cache
+trader_reports
