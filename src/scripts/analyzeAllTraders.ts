@@ -40,6 +40,16 @@ interface MonthlyStats {
     sellCount: number;
 }
 
+interface DailyStats {
+    date: string;
+    totalBought: number;
+    totalSold: number;
+    netFlow: number;
+    tradeCount: number;
+    buyCount: number;
+    sellCount: number;
+}
+
 interface TraderAnalysis {
     address: string;
     label: string;
@@ -80,6 +90,7 @@ interface TraderAnalysis {
         value: number;
     };
     monthlyBreakdown: MonthlyStats[];
+    dailyBreakdown: DailyStats[];
     topWinners: { title: string; outcome: string; pnl: number; roi: number }[];
     topLosers: { title: string; outcome: string; pnl: number; roi: number }[];
 }
@@ -95,9 +106,27 @@ const formatDate = (timestamp: number): string => {
 };
 
 const fetchTrades = async (address: string): Promise<Trade[]> => {
-    const url = `https://data-api.polymarket.com/activity?user=${address}&type=TRADE&limit=1000`;
-    const trades = await fetchData(url);
-    return Array.isArray(trades) ? trades : [];
+    // Fetch all trades with pagination
+    const allTrades: Trade[] = [];
+    let offset = 0;
+    const limit = 500;
+
+    while (true) {
+        const url = `https://data-api.polymarket.com/activity?user=${address}&type=TRADE&limit=${limit}&offset=${offset}`;
+        const trades = await fetchData(url);
+
+        if (!Array.isArray(trades) || trades.length === 0) break;
+
+        allTrades.push(...trades);
+
+        // If we got less than limit, we've reached the end
+        if (trades.length < limit) break;
+
+        offset += limit;
+        // No limit - fetch all trades
+    }
+
+    return allTrades;
 };
 
 const fetchPositions = async (address: string): Promise<Position[]> => {
@@ -130,12 +159,11 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
     console.log(`   Профиль: ${profile?.username || 'не найден'}`);
     console.log(`   Сделок: ${trades.length}, Позиций: ${positions.length}`);
 
-    // Filter trades for last 3 months
-    const threeMonthsAgo = Date.now() / 1000 - 90 * 24 * 60 * 60;
-    const recentTrades = trades.filter((t) => t.timestamp >= threeMonthsAgo);
+    // Use all trades (no date filter - filter on frontend if needed)
+    console.log(`   Всего сделок за всё время: ${trades.length}`);
 
     // Sort trades
-    recentTrades.sort((a, b) => a.timestamp - b.timestamp);
+    trades.sort((a, b) => a.timestamp - b.timestamp);
 
     // Calculate trade stats
     let totalBought = 0;
@@ -144,10 +172,13 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
     let sellCount = 0;
 
     const monthlyStats = new Map<string, MonthlyStats>();
+    const dailyStats = new Map<string, DailyStats>();
 
-    for (const trade of recentTrades) {
+    for (const trade of trades) {
         const month = formatMonth(trade.timestamp);
+        const day = formatDate(trade.timestamp);
 
+        // Monthly stats
         if (!monthlyStats.has(month)) {
             monthlyStats.set(month, {
                 month,
@@ -160,22 +191,42 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
             });
         }
 
-        const stats = monthlyStats.get(month)!;
-        stats.tradeCount++;
+        // Daily stats
+        if (!dailyStats.has(day)) {
+            dailyStats.set(day, {
+                date: day,
+                totalBought: 0,
+                totalSold: 0,
+                netFlow: 0,
+                tradeCount: 0,
+                buyCount: 0,
+                sellCount: 0,
+            });
+        }
+
+        const mStats = monthlyStats.get(month)!;
+        const dStats = dailyStats.get(day)!;
+        mStats.tradeCount++;
+        dStats.tradeCount++;
 
         if (trade.side === 'BUY') {
             totalBought += trade.usdcSize;
             buyCount++;
-            stats.totalBought += trade.usdcSize;
-            stats.buyCount++;
+            mStats.totalBought += trade.usdcSize;
+            mStats.buyCount++;
+            dStats.totalBought += trade.usdcSize;
+            dStats.buyCount++;
         } else {
             totalSold += trade.usdcSize;
             sellCount++;
-            stats.totalSold += trade.usdcSize;
-            stats.sellCount++;
+            mStats.totalSold += trade.usdcSize;
+            mStats.sellCount++;
+            dStats.totalSold += trade.usdcSize;
+            dStats.sellCount++;
         }
 
-        stats.netFlow = stats.totalSold - stats.totalBought;
+        mStats.netFlow = mStats.totalSold - mStats.totalBought;
+        dStats.netFlow = dStats.totalSold - dStats.totalBought;
     }
 
     // Calculate position stats
@@ -222,12 +273,12 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
     const roiPercent = (totalPnL / capitalDeployed) * 100;
 
     // Time calculations
-    const firstTradeDate = recentTrades.length > 0 ? formatDate(recentTrades[0].timestamp) : 'N/A';
+    const firstTradeDate = trades.length > 0 ? formatDate(trades[0].timestamp) : 'N/A';
     const lastTradeDate =
-        recentTrades.length > 0 ? formatDate(recentTrades[recentTrades.length - 1].timestamp) : 'N/A';
+        trades.length > 0 ? formatDate(trades[trades.length - 1].timestamp) : 'N/A';
     const daysActive =
-        recentTrades.length > 1
-            ? (recentTrades[recentTrades.length - 1].timestamp - recentTrades[0].timestamp) / 86400
+        trades.length > 1
+            ? (trades[trades.length - 1].timestamp - trades[0].timestamp) / 86400
             : 0;
     const monthsActive = Math.max(daysActive / 30, 1);
     const monthlyRoi = roiPercent / monthsActive;
@@ -237,9 +288,9 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
         address,
         label: displayLabel,
         analysisDate: new Date().toISOString(),
-        periodMonths: 3,
+        periodMonths: Math.ceil(daysActive / 30),
         trades: {
-            total: recentTrades.length,
+            total: trades.length,
             buys: buyCount,
             sells: sellCount,
             firstTrade: firstTradeDate,
@@ -273,6 +324,7 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
             value: redeemableValue,
         },
         monthlyBreakdown: Array.from(monthlyStats.values()).sort((a, b) => a.month.localeCompare(b.month)),
+        dailyBreakdown: Array.from(dailyStats.values()).sort((a, b) => a.date.localeCompare(b.date)),
         topWinners,
         topLosers,
     };
@@ -289,7 +341,7 @@ const generateReport = (analysis: TraderAnalysis): string => {
 
     report += `Адрес: ${analysis.address}\n`;
     report += `Дата анализа: ${analysis.analysisDate.split('T')[0]}\n`;
-    report += `Период: последние ${analysis.periodMonths} месяца\n`;
+    report += `Период: ${analysis.periodMonths} мес. (всё время)\n`;
     report += `Профиль: https://polymarket.com/profile/${analysis.address}\n\n`;
 
     report += `${'─'.repeat(70)}\n`;
@@ -382,11 +434,15 @@ const main = async () => {
     const myWallet = ENV.PROXY_WALLET;
     const tradersToFollow: string[] = ENV.USER_ADDRESSES;
 
+    const formatWalletLabel = (address: string): string => {
+        return `0x...${address.slice(-4)}`;
+    };
+
     const allAddresses: { address: string; label: string }[] = [
-        { address: myWallet, label: 'МОЙ КОШЕЛЁК' },
-        ...tradersToFollow.map((addr: string, i: number) => ({
+        { address: myWallet, label: `My Wallet (${formatWalletLabel(myWallet)})` },
+        ...tradersToFollow.map((addr: string) => ({
             address: addr,
-            label: `Trader ${i + 1}`,
+            label: formatWalletLabel(addr),
         })),
     ];
 
@@ -450,7 +506,7 @@ const main = async () => {
     // Save summary
     let summaryReport = '📊 СВОДНЫЙ ОТЧЁТ ПО ВСЕМ ТРЕЙДЕРАМ\n';
     summaryReport += `Дата: ${new Date().toISOString().split('T')[0]}\n`;
-    summaryReport += `Период: последние 3 месяца\n\n`;
+    summaryReport += `Период: всё время\n\n`;
 
     summaryReport += 'РЕЙТИНГ ПО ROI:\n';
     summaryReport += '═'.repeat(80) + '\n';
