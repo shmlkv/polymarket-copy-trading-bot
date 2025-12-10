@@ -4,6 +4,25 @@
 
 <img src="docs/trader analysis.png"/>
 <img src="docs/settings.png"/>
+
+## Why This Bot?
+
+A copy trading bot for Polymarket that prioritizes transparency, flexibility, and real-time execution. Unlike manual trading or basic scripts, this bot offers complete automation with intelligent position sizing.
+
+### Key Features
+
+| Feature | Description |
+|---------|-------------|
+| 🖥️ Web Dashboard | Full-featured web interface for analytics, trading, and configuration |
+| 📍 Position Tracking | Accurate tracking of purchases and sells across balance changes |
+| ⚡ Real-time Execution | Monitors trades every second and executes instantly |
+| 🔄 Trade Aggregation | Combine multiple small trades into larger executable orders |
+| 👥 Multi-Trader Support | Track and copy trades from multiple traders simultaneously |
+| 📊 Smart Position Sizing | Automatically scales trades based on your capital vs trader's balance |
+| 📈 Tiered Multipliers | Apply different multipliers based on trade size ranges |
+| 💾 MongoDB Integration | Persistent storage of all trades and positions |
+| 🐳 Docker Support | Production-ready deployment with Docker Compose |
+
 ---
 
 ## Quick Start
@@ -25,20 +44,6 @@ npm start       # Or terminal mode
 ```
 
 📖 **[Detailed Setup Guide →](./docs/QUICK_START.md)**
-
----
-
-## Features
-
-- **Multi-Trader Support** — Track and copy trades from multiple traders simultaneously
-- **Smart Position Sizing** — Automatically scales trades based on your capital vs trader's balance
-- **Tiered Multipliers** — Apply different multipliers based on trade size ranges
-- **Web Dashboard** — Full-featured web interface for analytics, trading, and configuration
-- **Trade Aggregation** — Combine multiple small trades into larger executable orders
-- **Position Tracking** — Accurate tracking of purchases and sells across balance changes
-- **Real-time Execution** — Monitors trades every second and executes instantly
-- **MongoDB Integration** — Persistent storage of all trades and positions
-- **Docker Support** — Production-ready deployment with Docker Compose
 
 ---
 
