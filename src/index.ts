@@ -3,6 +3,7 @@ import { ENV } from './config/env';
 import createClobClient from './utils/createClobClient';
 import tradeExecutor, { stopTradeExecutor } from './services/tradeExecutor';
 import tradeMonitor, { stopTradeMonitor } from './services/tradeMonitor';
+import autoResolver, { stopAutoResolver } from './services/autoResolver';
 import Logger from './utils/logger';
 import { performHealthCheck, logHealthCheck } from './utils/healthCheck';
 import test from './test/test';
@@ -27,6 +28,7 @@ const gracefulShutdown = async (signal: string) => {
         // Stop services
         stopTradeMonitor();
         stopTradeExecutor();
+        stopAutoResolver();
 
         // Give services time to finish current operations
         Logger.info('Waiting for services to finish current operations...');
@@ -86,6 +88,9 @@ export const main = async () => {
 
         Logger.info('Starting trade executor...');
         tradeExecutor(clobClient);
+
+        Logger.info('Starting auto resolver...');
+        autoResolver(clobClient);
 
         // test(clobClient);
     } catch (error) {

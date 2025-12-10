@@ -293,4 +293,7 @@ export const ENV = {
     MONGO_URI: process.env.MONGO_URI as string,
     RPC_URL: process.env.RPC_URL as string,
     USDC_CONTRACT_ADDRESS: process.env.USDC_CONTRACT_ADDRESS as string,
+    // Auto-resolve settings (automatically sell positions at 100% or 0%)
+    AUTO_RESOLVE_ENABLED: process.env.AUTO_RESOLVE_ENABLED === 'true',
+    AUTO_RESOLVE_INTERVAL: parseInt(process.env.AUTO_RESOLVE_INTERVAL || '60', 10), // Check every 60s by default
 };
