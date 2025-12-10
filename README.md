@@ -4,11 +4,6 @@
 
 <img src="docs/trader analysis.png"/>
 <img src="docs/settings.png"/>
-
-<img src="docs/trader overview .png"/>
-
-**Example trader:** Check performance on [Predictfolio](https://predictfolio.com/dashboard/0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b)
-
 ---
 
 ## Quick Start
@@ -57,6 +52,10 @@ The bot includes a full web dashboard at `http://localhost:3000` with three main
 - Monthly and daily performance trends
 - Volume analysis and win rate statistics
 - Sortable table with detailed metrics
+
+<img src="docs/trader overview .png"/>
+
+**Example trader:** Check performance on [Predictfolio](https://predictfolio.com/dashboard/0x7c3db723f1d4d8cb9c550095203b686cb11e5c6b)
 
 ### My Trades
 
