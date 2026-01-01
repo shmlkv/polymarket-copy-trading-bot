@@ -38,6 +38,7 @@ interface MonthlyStats {
     tradeCount: number;
     buyCount: number;
     sellCount: number;
+    realizedPnl: number;
 }
 
 interface DailyStats {
@@ -48,6 +49,7 @@ interface DailyStats {
     tradeCount: number;
     buyCount: number;
     sellCount: number;
+    realizedPnl: number;
 }
 
 interface TraderAnalysis {
@@ -174,6 +176,9 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
     const monthlyStats = new Map<string, MonthlyStats>();
     const dailyStats = new Map<string, DailyStats>();
 
+    // Track positions for P&L calculation (asset -> { shares, totalCost })
+    const positionTracker = new Map<string, { shares: number; totalCost: number }>();
+
     for (const trade of trades) {
         const month = formatMonth(trade.timestamp);
         const day = formatDate(trade.timestamp);
@@ -188,6 +193,7 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
                 tradeCount: 0,
                 buyCount: 0,
                 sellCount: 0,
+                realizedPnl: 0,
             });
         }
 
@@ -201,6 +207,7 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
                 tradeCount: 0,
                 buyCount: 0,
                 sellCount: 0,
+                realizedPnl: 0,
             });
         }
 
@@ -209,6 +216,9 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
         mStats.tradeCount++;
         dStats.tradeCount++;
 
+        // Calculate shares from trade (usdcSize / price)
+        const shares = trade.price > 0 ? trade.usdcSize / trade.price : 0;
+
         if (trade.side === 'BUY') {
             totalBought += trade.usdcSize;
             buyCount++;
@@ -216,6 +226,12 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
             mStats.buyCount++;
             dStats.totalBought += trade.usdcSize;
             dStats.buyCount++;
+
+            // Track position cost basis
+            const pos = positionTracker.get(trade.asset) || { shares: 0, totalCost: 0 };
+            pos.shares += shares;
+            pos.totalCost += trade.usdcSize;
+            positionTracker.set(trade.asset, pos);
         } else {
             totalSold += trade.usdcSize;
             sellCount++;
@@ -223,6 +239,27 @@ const analyzeTrader = async (address: string, label: string): Promise<TraderAnal
             mStats.sellCount++;
             dStats.totalSold += trade.usdcSize;
             dStats.sellCount++;
+
+            // Calculate realized P&L on sell
+            const pos = positionTracker.get(trade.asset);
+            if (pos && pos.shares > 0) {
+                const avgCostPerShare = pos.totalCost / pos.shares;
+                const costBasis = avgCostPerShare * shares;
+                const realizedPnl = trade.usdcSize - costBasis;
+
+                mStats.realizedPnl += realizedPnl;
+                dStats.realizedPnl += realizedPnl;
+
+                // Reduce position
+                const soldRatio = Math.min(shares / pos.shares, 1);
+                pos.shares -= shares;
+                pos.totalCost -= pos.totalCost * soldRatio;
+                if (pos.shares <= 0) {
+                    positionTracker.delete(trade.asset);
+                } else {
+                    positionTracker.set(trade.asset, pos);
+                }
+            }
         }
 
         mStats.netFlow = mStats.totalSold - mStats.totalBought;

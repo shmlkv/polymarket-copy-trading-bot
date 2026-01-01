@@ -7,11 +7,18 @@ import { ROIBarChart } from '@/components/charts/ROIBarChart';
 import { MonthlyLineChart } from '@/components/charts/MonthlyLineChart';
 import { VolumeLineChart } from '@/components/charts/VolumeLineChart';
 import { DailyLineChart } from '@/components/charts/DailyLineChart';
+import { WinRateGauge } from '@/components/charts/WinRateGauge';
+import { ProfitLossDonut } from '@/components/charts/ProfitLossDonut';
+import { VolumeSparkline } from '@/components/charts/VolumeSparkline';
+import { TrendArrow } from '@/components/charts/TrendArrow';
+import { RiskScoreMeter } from '@/components/charts/RiskScoreMeter';
+import { ActivePositionsPie } from '@/components/charts/ActivePositionsPie';
 import { TradersTable } from '@/components/TradersTable';
 import { MyTradesView } from '@/components/MyTradesView';
 import { SettingsView } from '@/components/SettingsView';
 import { StatusBar } from '@/components/StatusBar';
 import { Button } from '@/components/ui/button';
+import { TimeRangeFilter, TimeRange } from '@/components/TimeRangeFilter';
 
 type ViewMode = 'traders' | 'my-trades' | 'settings';
 
@@ -21,6 +28,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>('30d');
 
   const fetchTraders = async (refresh = false) => {
     try {
@@ -83,15 +91,6 @@ export default function Home() {
     );
   }
 
-  // Calculate summary stats for traders view
-  const totalPnL = traders.reduce((sum, t) => sum + t.pnl.total, 0);
-  const totalVolume = traders.reduce((sum, t) => sum + t.volume.totalBought, 0);
-  const avgWinRate =
-    traders.length > 0
-      ? traders.reduce((sum, t) => sum + t.positions.winRate, 0) / traders.length
-      : 0;
-  const profitableTraders = traders.filter((t) => t.pnl.total > 0).length;
-
   const getSubtitle = () => {
     switch (viewMode) {
       case 'traders':
@@ -110,32 +109,35 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background dark">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
         {/* Header with Mode Toggle */}
-        <header className="mb-8">
+        <header className="mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2">
-                {viewMode === 'settings' ? 'Bot Dashboard' : 'Trader Analytics Dashboard'}
+              <h1 className="text-3xl font-bold mb-1 tracking-tight">
+                {viewMode === 'settings' ? 'Bot Dashboard' : 'Trader Analytics'}
               </h1>
-              <p className="text-muted-foreground">{getSubtitle()}</p>
+              <p className="text-sm text-muted-foreground">{getSubtitle()}</p>
             </div>
 
             {/* Mode Toggle Buttons */}
             <div className="flex gap-2">
               <Button
+                size="sm"
                 variant={viewMode === 'traders' ? 'default' : 'outline'}
                 onClick={() => setViewMode('traders')}
               >
-                Traders Analysis
+                Traders
               </Button>
               <Button
+                size="sm"
                 variant={viewMode === 'my-trades' ? 'default' : 'outline'}
                 onClick={() => setViewMode('my-trades')}
               >
                 My Trades
               </Button>
               <Button
+                size="sm"
                 variant={viewMode === 'settings' ? 'default' : 'outline'}
                 onClick={() => setViewMode('settings')}
               >
@@ -147,56 +149,56 @@ export default function Home() {
 
         {viewMode === 'traders' && (
           <>
-            {/* Status Bar */}
-            <StatusBar
-              lastUpdated={traders[0]?.analysisDate}
-              totalItems={traders.length}
-              itemLabel="traders"
-              refreshing={refreshing}
-              onRefresh={() => fetchTraders(true)}
-            />
+            {/* Status Bar with Time Range Filter */}
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <StatusBar
+                lastUpdated={traders[0]?.analysisDate}
+                totalItems={traders.length}
+                itemLabel="traders"
+                refreshing={refreshing}
+                onRefresh={() => fetchTraders(true)}
+              />
+              <TimeRangeFilter value={timeRange} onChange={setTimeRange} />
+            </div>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-card rounded-lg p-4 border">
-                <p className="text-sm text-muted-foreground">Total P&L</p>
-                <p
-                  className={`text-2xl font-bold font-mono ${
-                    totalPnL >= 0 ? 'text-green-500' : 'text-red-500'
-                  }`}
-                >
-                  {totalPnL >= 0 ? '+' : '-'}${Math.abs(totalPnL).toFixed(2)}
-                </p>
+            {/* Hero Section - Bento Grid */}
+            <div className="grid grid-cols-12 gap-3 mb-6" style={{ minHeight: '320px' }}>
+              {/* P&L Chart - Left */}
+              <div className="col-span-12 lg:col-span-4">
+                <PnLBarChart traders={traders} compact timeRange={timeRange} />
               </div>
-              <div className="bg-card rounded-lg p-4 border">
-                <p className="text-sm text-muted-foreground">Total Volume</p>
-                <p className="text-2xl font-bold font-mono">${totalVolume.toFixed(0)}</p>
+
+              {/* Center Column - 2x2 Grid of small widgets */}
+              <div className="col-span-12 lg:col-span-4 grid grid-cols-2 gap-3">
+                <WinRateGauge traders={traders} timeRange={timeRange} />
+                <ProfitLossDonut traders={traders} timeRange={timeRange} />
+                <VolumeSparkline traders={traders} timeRange={timeRange} />
+                <TrendArrow traders={traders} timeRange={timeRange} />
               </div>
-              <div className="bg-card rounded-lg p-4 border">
-                <p className="text-sm text-muted-foreground">Avg Win Rate</p>
-                <p className="text-2xl font-bold font-mono">{avgWinRate.toFixed(1)}%</p>
-              </div>
-              <div className="bg-card rounded-lg p-4 border">
-                <p className="text-sm text-muted-foreground">Profitable Traders</p>
-                <p className="text-2xl font-bold font-mono">
-                  {profitableTraders}/{traders.length}
-                </p>
+
+              {/* ROI Chart - Right */}
+              <div className="col-span-12 lg:col-span-4">
+                <ROIBarChart traders={traders} compact timeRange={timeRange} />
               </div>
             </div>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <PnLBarChart traders={traders} />
-              <ROIBarChart traders={traders} />
+            {/* Second Row - Time Series Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              <DailyLineChart traders={traders} compact timeRange={timeRange} />
+              <MonthlyLineChart traders={traders} compact timeRange={timeRange} />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              <MonthlyLineChart traders={traders} />
-              <VolumeLineChart traders={traders} />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 mb-8">
-              <DailyLineChart traders={traders} />
+            {/* Third Row - Additional Metrics + Table Preview */}
+            <div className="grid grid-cols-12 gap-4 mb-6">
+              <div className="col-span-6 lg:col-span-2">
+                <RiskScoreMeter traders={traders} timeRange={timeRange} />
+              </div>
+              <div className="col-span-6 lg:col-span-2">
+                <ActivePositionsPie traders={traders} timeRange={timeRange} />
+              </div>
+              <div className="col-span-12 lg:col-span-8">
+                <VolumeLineChart traders={traders} compact timeRange={timeRange} />
+              </div>
             </div>
 
             {/* Table */}

@@ -6,6 +6,7 @@ export interface MonthlyStats {
   tradeCount: number;
   buyCount: number;
   sellCount: number;
+  realizedPnl: number;
 }
 
 export interface DailyStats {
@@ -16,6 +17,7 @@ export interface DailyStats {
   tradeCount: number;
   buyCount: number;
   sellCount: number;
+  realizedPnl: number;
 }
 
 export interface TraderAnalysis {
