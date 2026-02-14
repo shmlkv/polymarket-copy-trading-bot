@@ -18,6 +18,8 @@ A copy trading bot for Polymarket that prioritizes transparency, flexibility, an
 <img src="docs/trader analysis.png"/>
 <img src="docs/settings.png"/>
 
+<div align="center">
+
 ### Key Features
 
 | Feature                  | Description                                                           |
@@ -31,6 +33,8 @@ A copy trading bot for Polymarket that prioritizes transparency, flexibility, an
 | 📈 Tiered Multipliers    | Apply different multipliers based on trade size ranges                |
 | 💾 MongoDB Integration   | Persistent storage of all trades and positions                        |
 | 🐳 Docker Support        | Production-ready deployment with Docker Compose                       |
+
+</div>
 
 ---
 
