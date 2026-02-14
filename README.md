@@ -15,9 +15,6 @@
 
 A copy trading bot for Polymarket that prioritizes transparency, flexibility, and real-time execution. Unlike manual trading or basic scripts, this bot offers complete automation with intelligent position sizing.
 
-<img src="docs/trader analysis.png"/>
-<img src="docs/settings.png"/>
-
 <div align="center">
 
 ### Key Features
@@ -35,6 +32,9 @@ A copy trading bot for Polymarket that prioritizes transparency, flexibility, an
 | 🐳 Docker Support        | Production-ready deployment with Docker Compose                       |
 
 </div>
+
+<img src="docs/trader analysis.png"/>
+<img src="docs/settings.png"/>
 
 ---
 
