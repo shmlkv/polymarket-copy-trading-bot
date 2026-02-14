@@ -29,9 +29,6 @@ A copy trading bot for Polymarket that prioritizes transparency, flexibility, an
 | 💾 MongoDB Integration   | Persistent storage of all trades and positions                        |
 | 🐳 Docker Support        | Production-ready deployment with Docker Compose                       |
 
-<img src="docs/trader analysis.png"/>
-<img src="docs/settings.png"/>
-
 ---
 
 ## Quick Start
@@ -59,6 +56,9 @@ npm start       # Or terminal mode
 ## Web Interface
 
 The bot includes a full web dashboard at `http://localhost:3000` with three main views:
+
+<img src="docs/trader analysis.png"/>
+<img src="docs/settings.png"/>
 
 ### Traders Analytics
 
