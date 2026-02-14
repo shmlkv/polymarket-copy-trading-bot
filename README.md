@@ -2,6 +2,11 @@
 
 > **Copy the best, automate success.** Mirror trades from top Polymarket traders with intelligent position sizing and real-time execution.
 
+![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
+![License](https://img.shields.io/badge/license-MIT-blue)
+![Repo Size](https://img.shields.io/github/repo-size/shmlkv/polymarket-copy-trading-bot)
+![Issues](https://img.shields.io/github/issues/shmlkv/polymarket-copy-trading-bot)
+
 <img src="docs/trader analysis.png"/>
 <img src="docs/settings.png"/>
 
@@ -11,17 +16,17 @@ A copy trading bot for Polymarket that prioritizes transparency, flexibility, an
 
 ### Key Features
 
-| Feature | Description |
-|---------|-------------|
-| 🖥️ Web Dashboard | Full-featured web interface for analytics, trading, and configuration |
-| 📍 Position Tracking | Accurate tracking of purchases and sells across balance changes |
-| ⚡ Real-time Execution | Monitors trades every second and executes instantly |
-| 🔄 Trade Aggregation | Combine multiple small trades into larger executable orders |
-| 👥 Multi-Trader Support | Track and copy trades from multiple traders simultaneously |
+| Feature                  | Description                                                           |
+| ------------------------ | --------------------------------------------------------------------- |
+| 🖥️ Web Dashboard         | Full-featured web interface for analytics, trading, and configuration |
+| 📍 Position Tracking     | Accurate tracking of purchases and sells across balance changes       |
+| ⚡ Real-time Execution   | Monitors trades every second and executes instantly                   |
+| 🔄 Trade Aggregation     | Combine multiple small trades into larger executable orders           |
+| 👥 Multi-Trader Support  | Track and copy trades from multiple traders simultaneously            |
 | 📊 Smart Position Sizing | Automatically scales trades based on your capital vs trader's balance |
-| 📈 Tiered Multipliers | Apply different multipliers based on trade size ranges |
-| 💾 MongoDB Integration | Persistent storage of all trades and positions |
-| 🐳 Docker Support | Production-ready deployment with Docker Compose |
+| 📈 Tiered Multipliers    | Apply different multipliers based on trade size ranges                |
+| 💾 MongoDB Integration   | Persistent storage of all trades and positions                        |
+| 🐳 Docker Support        | Production-ready deployment with Docker Compose                       |
 
 ---
 
