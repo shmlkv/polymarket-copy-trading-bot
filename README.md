@@ -2,17 +2,21 @@
 
 > **Copy the best, automate success.** Mirror trades from top Polymarket traders with intelligent position sizing and real-time execution.
 
+<div align="center">
+
 ![Node](https://img.shields.io/badge/node-%3E%3D18-brightgreen)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Repo Size](https://img.shields.io/github/repo-size/shmlkv/polymarket-copy-trading-bot)
 ![Issues](https://img.shields.io/github/issues/shmlkv/polymarket-copy-trading-bot)
 
-<img src="docs/trader analysis.png"/>
-<img src="docs/settings.png"/>
+</div>
 
 ## Why This Bot?
 
 A copy trading bot for Polymarket that prioritizes transparency, flexibility, and real-time execution. Unlike manual trading or basic scripts, this bot offers complete automation with intelligent position sizing.
+
+<img src="docs/trader analysis.png"/>
+<img src="docs/settings.png"/>
 
 ### Key Features
 
