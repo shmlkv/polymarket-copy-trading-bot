@@ -28,7 +28,8 @@ const isGnosisSafe = async (address: string): Promise<boolean> => {
 const createClobClient = async (): Promise<ClobClient> => {
     const chainId = 137;
     const host = CLOB_HTTP_URL as string;
-    const wallet = new ethers.Wallet(PRIVATE_KEY as string);
+    // PRIVATE_KEY is already normalized in env.ts (handles base64 and hex formats)
+    const wallet = new ethers.Wallet(PRIVATE_KEY);
 
     // Detect if the proxy wallet is a Gnosis Safe or EOA
     const isProxySafe = await isGnosisSafe(PROXY_WALLET as string);

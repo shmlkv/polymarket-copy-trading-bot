@@ -128,6 +128,67 @@ const validateUrls = (): void => {
     }
 };
 
+/**
+ * Normalizes a private key from various formats (base64, hex with/without 0x) to hex format
+ * @param privateKey - The private key in any format
+ * @returns Normalized hex private key (with 0x prefix)
+ */
+const normalizePrivateKey = (privateKey: string): string => {
+    if (!privateKey) {
+        throw new Error('Private key is empty');
+    }
+
+    // Remove whitespace
+    const trimmed = privateKey.trim();
+
+    // Check if it's already a valid hex string (with or without 0x)
+    const hexPattern = /^(0x)?[0-9a-fA-F]{64}$/;
+    if (hexPattern.test(trimmed)) {
+        // Already hex, ensure it has 0x prefix
+        return trimmed.startsWith('0x') ? trimmed : `0x${trimmed}`;
+    }
+
+    // Check if it looks like base64 (contains +, /, =, or base64 characters)
+    const base64Pattern = /^[A-Za-z0-9+/=]+$/;
+    if (base64Pattern.test(trimmed) && (trimmed.includes('+') || trimmed.includes('/') || trimmed.includes('='))) {
+        try {
+            // Decode base64 to buffer
+            const buffer = Buffer.from(trimmed, 'base64');
+            const bufferLength = buffer.length;
+            
+            // Handle different buffer sizes
+            let privateKeyBuffer: Buffer;
+            if (bufferLength === 32) {
+                // Perfect - exactly 32 bytes (standard private key size)
+                privateKeyBuffer = buffer;
+            } else if (bufferLength === 64) {
+                // 64 bytes - likely contains extra data, take first 32 bytes
+                console.log('⚠ Base64 decoded to 64 bytes, using first 32 bytes as private key');
+                privateKeyBuffer = buffer.slice(0, 32);
+            } else if (bufferLength > 32) {
+                // Larger than 32 bytes - take first 32 bytes
+                console.log(`⚠ Base64 decoded to ${bufferLength} bytes, using first 32 bytes as private key`);
+                privateKeyBuffer = buffer.slice(0, 32);
+            } else {
+                // Too small
+                throw new Error(`Invalid private key length after base64 decode: ${bufferLength} bytes (expected 32 bytes)`);
+            }
+            
+            // Convert buffer to hex string
+            const hexKey = `0x${privateKeyBuffer.toString('hex')}`;
+            
+            console.log('✓ Private key detected as base64, converted to hex format');
+            return hexKey;
+        } catch (error) {
+            throw new Error(`Failed to decode base64 private key: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    }
+
+    // If it doesn't match either pattern, try to use it as-is (ethers will validate)
+    console.warn('⚠ Private key format not recognized, attempting to use as-is');
+    return trimmed.startsWith('0x') ? trimmed : `0x${trimmed}`;
+};
+
 // Run all validations
 validateRequiredEnv();
 validateAddresses();
@@ -270,7 +331,7 @@ const parseCopyStrategy = (): CopyStrategyConfig => {
 export const ENV = {
     USER_ADDRESSES: parseUserAddresses(process.env.USER_ADDRESSES as string),
     PROXY_WALLET: process.env.PROXY_WALLET as string,
-    PRIVATE_KEY: process.env.PRIVATE_KEY as string,
+    PRIVATE_KEY: normalizePrivateKey(process.env.PRIVATE_KEY as string),
     CLOB_HTTP_URL: process.env.CLOB_HTTP_URL as string,
     CLOB_WS_URL: process.env.CLOB_WS_URL as string,
     FETCH_INTERVAL: parseInt(process.env.FETCH_INTERVAL || '1', 10),
